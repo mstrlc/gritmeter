@@ -24,3 +24,6 @@
   Cache-Control: public, max-age=86400
 /icon-512.png
   Cache-Control: public, max-age=86400
+
+/strava/*
+  Cache-Control: public, max-age=86400

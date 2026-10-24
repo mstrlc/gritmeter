@@ -128,6 +128,14 @@ h1 br { display: block; }
 footer { border-top: 1px solid var(--ink); }
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-block: 20px 40px; font-size: .875rem; color: var(--ink-2); }
 footer p { margin: 0; }
+/* official Powered by Strava logo (strava/, unmodified): black on light, white on dark */
+.pwrd { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.pwrd img { height: 14px; width: auto; }
+.pwrd .on-dark { display: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pwrd .on-light { display: none; }
+  :root:not([data-theme="light"]) .pwrd .on-dark { display: inline; } }
+:root[data-theme="dark"] .pwrd .on-light { display: none; }
+:root[data-theme="dark"] .pwrd .on-dark { display: inline; }
 </style>
 </head>
 <body>
@@ -224,7 +232,7 @@ footer p { margin: 0; }
 <footer>
   <div class="wrap">
     <p>map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
-    <p>Powered by Strava. <span class="gm"><svg aria-hidden="true"><use href="#gm-mark"/></svg>gritmeter</span> is not affiliated with or endorsed by Strava.</p>
+    <p class="pwrd"><img class="on-light" src="strava/api_logo_pwrdBy_strava_horiz_black.svg" alt="Powered by Strava" width="138" height="14"><img class="on-dark" src="strava/api_logo_pwrdBy_strava_horiz_white.svg" alt="Powered by Strava" width="138" height="14"><span><span class="gm"><svg aria-hidden="true"><use href="#gm-mark"/></svg>gritmeter</span> is not affiliated with or endorsed by Strava.</span></p>
   </div>
 </footer>
 
