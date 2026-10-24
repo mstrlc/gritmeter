@@ -20,6 +20,7 @@
 :root {
   --paper: #eef0ea; --paper-2: #e3e6dd; --ink: #13161a; --ink-2: #555c63; --rule: #c6cbc0;
   --contour: #b9946b; --accent: #c42e2a;   /* G5 rough */
+  --raised: #ffffff;                        /* selected segment of a switch */
   --display: "Epilogue", "Helvetica Neue", Arial, sans-serif;
   --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --gutter: clamp(16px, 5vw, 64px);
@@ -28,11 +29,11 @@
 /* dark follows the system unless the visitor picks light or dark in the header */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --paper: #0f1214; --paper-2: #171b1e; --ink: #e7e9e2; --ink-2: #99a09a; --rule: #2b3034;
-  --contour: #6b5640; --accent: #ee5a4e; color-scheme: dark;
+  --contour: #6b5640; --accent: #ee5a4e; --raised: #2c3337; color-scheme: dark;
 } }
 :root[data-theme="dark"] {
   --paper: #0f1214; --paper-2: #171b1e; --ink: #e7e9e2; --ink-2: #99a09a; --rule: #2b3034;
-  --contour: #6b5640; --accent: #ee5a4e; color-scheme: dark;
+  --contour: #6b5640; --accent: #ee5a4e; --raised: #2c3337; color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -45,30 +46,29 @@ a { color: inherit; text-underline-offset: 3px; }
 /* header */
 .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 76px; }
 .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 900; letter-spacing: -.06em; font-size: 1.5rem; }
-.top nav { display: flex; align-items: stretch; gap: clamp(12px, 2.5vw, 24px); }
-/* boxed segmented switch, as on the identity sheet */
-.theme { display: flex; border: 1px solid var(--ink); font-size: .875rem; }
-.theme button { display: grid; place-items: center; width: 40px; background: none; color: var(--ink); border: 0; padding: 0; cursor: pointer; }
+.top nav { display: flex; align-items: center; gap: clamp(10px, 2vw, 16px); }
+/* segmented switch as in the app (web.py): a soft track, the current option raised on it */
+.theme { display: flex; gap: 2px; padding: 3px; background: var(--paper-2); border-radius: 12px; }
+.theme button { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; background: none; color: var(--ink-2);
+  border: 0; padding: 0; cursor: pointer; transition: background .15s, color .15s; }
 .theme svg { width: 16px; height: 16px; }
-.theme button + button { border-left: 1px solid var(--ink); }
-.theme button:hover { background: var(--paper-2); }
-.theme button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.theme button:hover { color: var(--ink); }
+.theme button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: 0 1px 2px rgba(19, 22, 26, .08), 0 3px 10px rgba(19, 22, 26, .06); }
 
 /* one button style */
-.btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; letter-spacing: -.01em; padding: 15px 24px 14px;
-  background: var(--ink); color: var(--paper); transition: transform .15s; }
+.btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; letter-spacing: -.01em; padding: 14px 24px;
+  border-radius: 12px; background: var(--ink); color: var(--paper); transition: transform .15s; }
 .btn:hover { transform: translateY(-2px); }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
-.btn.sm { padding: 9px 14px 8px; font-size: .9375rem; }
+.btn.sm { padding: 9px 14px; font-size: .9375rem; border-radius: 10px; }
 .btn { white-space: nowrap; }
 .gm { font-weight: 900; letter-spacing: -.04em; white-space: nowrap; color: var(--ink); }
 .gm svg { width: .78em; height: .78em; fill: currentColor; vertical-align: -.04em; margin-right: .25em; }
 .btn .ext { width: 14px; height: 14px; flex: none; }
 @media (max-width: 420px) {
   .logo { font-size: 1.25rem; gap: 8px; }
-  .theme { font-size: .8125rem; }
-  .theme button { width: 32px; }
-  .btn.sm { padding: 8px 10px 7px; font-size: .875rem; }
+  .theme button { width: 30px; height: 30px; }
+  .btn.sm { padding: 8px 11px; font-size: .875rem; }
 }
 
 /* hero */
