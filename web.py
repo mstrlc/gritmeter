@@ -287,24 +287,22 @@ def activities_page(athlete, jobs, csrf, code=""):
     rated = [j for j in jobs if j["result"]]
     written = sum(j["status"] == "done" for j in jobs)
     warn = notice("noscope") if "activity:write" not in (athlete.get("scope") or "") and code != "noscope" else ""
+    # subheading: who is signed in, then the counts once there are rides
+    parts = [escape(athlete["firstname"])] if athlete.get("firstname") else []
     if jobs:
-        summary = (f'<p class="summary mono muted tnum">{_n(len(rated), "ride")} rated · {written} with the summary in '
-                   f'the description</p>')
-        listing = '<ul class="rides">' + "".join(_ride(j, csrf) for j in jobs) + "</ul>"
-    else:
-        summary = ""
-        listing = ""
+        parts += [f'{_n(len(rated), "ride")} rated', f"{written} with the summary in the description"]
+    summary = f'<p class="summary mono muted tnum">{" · ".join(parts)}</p>' if parts else ""
+    listing = '<ul class="rides">' + "".join(_ride(j, csrf) for j in jobs) + "</ul>" if jobs else ""
     button = (f'<form method="post" action="/backfill"><input type="hidden" name="csrf" value="{csrf}">'
               f'<button class="btn line sm" type="submit">rate my last 14 days</button></form>')
     explain = (f'<p class="muted">want to see what {GM} makes of rides from before you joined? it rates rides from '
                f'the last 14 days here, without touching their descriptions.</p>')
     backfill = (f'<div class="empty"><p>nothing yet. new rides show up here a minute or two after you upload them.</p>'
                 f'{explain}{button}</div>' if not jobs else f'<div class="empty">{explain}{button}</div>')
-    hello = f", {escape(athlete['firstname'].lower())}" if athlete.get("firstname") else ""
     # while anything is queued, reload every few seconds (keeps the scroll position) so its status updates
     refresh = ('<script>setTimeout(function () { location.reload(); }, 4000);</script>'
                if any(j["status"] == "queued" for j in jobs) else "")
-    body = f"""{refresh}<h1>your rides{hello}.</h1>{summary}{notice(code)}{warn}{listing if jobs else backfill}{backfill if jobs else ""}"""
+    body = f"""{refresh}<h1>your rides.</h1>{summary}{notice(code)}{warn}{listing if jobs else backfill}{backfill if jobs else ""}"""
     return shell("rides", body, athlete, csrf, current="/")
 
 
