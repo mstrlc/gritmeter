@@ -7,5 +7,10 @@
     "directory": "./site",
     "binding": "ASSETS",
     "run_worker_first": true
-  }
+  },
+  // custom domains: wrangler creates the DNS records and certificates on deploy
+  "routes": [
+    { "pattern": "gritmeter.app", "custom_domain": true },
+    { "pattern": "www.gritmeter.app", "custom_domain": true }
+  ]
 }
