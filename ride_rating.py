@@ -70,6 +70,47 @@ def label(s):
             else "gravel" if s < 30 else "rough gravel")
 
 
+def rate(points):
+    """Rate one ride from its [(lat, lon)] track: {km, score, label, pct per level in ORDER}."""
+    d = sm.analyse(points, sm.fetch_osm(points), classify_fine)
+    t = sum(d.values()) or 1
+    s = score(d)
+    return {"km": round(t / 1000, 1), "score": round(s, 1), "label": label(s),
+            "pct": {k: round(100 * d[k] / t, 1) for k in ORDER}}
+
+
+# ---------------------------------------------------------------- Strava description block (format fixed in PLAN.md)
+
+MARKER = "surface by gritmeter.app"
+CREDIT = "map data © OpenStreetMap contributors"
+MIN_PCT = 5  # shares below this are left out of the summary line
+DESC_NAMES = {"paved_rough": "rough pavement"}
+
+
+def description_block(r):
+    """The 4-line block gritmeter appends to an activity description."""
+    shares = sorted(((p, k) for k, p in r["pct"].items() if p >= MIN_PCT), reverse=True)
+    mix = " · ".join(f"{int(p + 0.5)}% {DESC_NAMES.get(k, k)}" for p, k in shares)  # half up, not to even
+    return f"{MARKER}\n{mix}\nroughness {int(r['score'] + 0.5)} / 100, {r['label']}\n{CREDIT}"
+
+
+def strip_block(text):
+    """The rider's text with our block (marker to its credit line) taken out."""
+    text = text or ""
+    start = text.find(MARKER)
+    if start == -1:
+        return text
+    end = text.find(CREDIT, start)
+    tail = text[end + len(CREDIT):] if end != -1 else ""
+    return (text[:start].rstrip() + "\n\n" + tail.strip()).strip()
+
+
+def merge_description(text, block):
+    """Append our block to the rider's text, replacing a previous block of ours."""
+    text = strip_block(text) if MARKER in (text or "") else (text or "")
+    return f"{text.rstrip()}\n\n{block}" if text.strip() else block
+
+
 def main():
     rides = [r for r in sm.load_rides() if not str(r["id"]).startswith("validate_")]
     out, totals = [], Counter()
