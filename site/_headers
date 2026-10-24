@@ -18,3 +18,9 @@
 # favicon has no hash in its name, so cache it for a day rather than forever
 /favicon.svg
   Cache-Control: public, max-age=86400
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400
+/icon-192.png
+  Cache-Control: public, max-age=86400
+/icon-512.png
+  Cache-Control: public, max-age=86400
