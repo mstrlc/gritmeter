@@ -257,7 +257,7 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/activity/(\d+)/(add|remove|retry)", path)
         if m and store.request_action(aid, int(m[1]), ACTIONS[m[2]]):
             wake.set()
-            return self.redirect("/?n=queued")
+            return self.redirect(f"/#ride-{m[1]}")  # back to the ride, whose status shows the request
         self.reply(404, "not found")
 
     def webhook(self):

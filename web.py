@@ -90,7 +90,7 @@ h2 { font-weight: 900; letter-spacing: -.04em; line-height: 1; font-size: 1.75re
 /* activities */
 .summary { margin-top: 12px; font-size: .9375rem; }
 .rides { list-style: none; margin: 32px 0 0; padding: 0; border-top: 1px solid var(--ink); }
-.ride { padding: 22px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 24px; }
+.ride { scroll-margin-top: 24px; padding: 22px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 24px; }
 .ride .meta { font-size: .8125rem; }
 .ride h3 { font-weight: 800; letter-spacing: -.02em; font-size: 1.25rem; line-height: 1.2; }
 .ride h3 a { text-decoration: none; }
@@ -153,7 +153,6 @@ NOTICES = {
     "noscope": "connected, but without permission to edit your activities, so gritmeter can rate rides but not add "
                "the summary. sign in again and keep that box ticked.",
     "saved": "settings saved.",
-    "queued": "done. it is in the queue and will update in a minute or two; reload to see it.",
     "backfill": "your recent rides are in the queue. they are rated here only; add the summary ride by ride.",
     "out": "signed out.",
     "gone": "disconnected. gritmeter's access is revoked and everything it stored about you is deleted.",
@@ -275,12 +274,12 @@ def _ride(job, csrf):
     strava = f'<a class="strava-link" href="https://www.strava.com/activities/{aid}">View on Strava</a>'
     if job["status"] == "skipped":
         meta = " · ".join(x for x in (when, f'skipped: {escape(_skip_reason(job["detail"]))}') if x)
-        return f'<li class="ride skipped"><h3>{name}</h3><p class="meta"><span class="mono tnum">{meta}</span> · {strava}</p></li>'
+        return f'<li class="ride skipped" id="ride-{aid}"><h3>{name}</h3><p class="meta"><span class="mono tnum">{meta}</span> · {strava}</p></li>'
     meta = " · ".join(x for x in (when, f'{r["km"]} km' if r else "") if x)
     score = (f'<div class="score"><b class="tnum">{int(r["score"] + .5)}</b><span class="badge">{escape(r["label"])}</span></div>'
              if r else '<div class="score"></div>')
     mix = _mix(r["pct"]) if r else ""
-    return (f'<li class="ride"><div><p class="meta mono muted tnum">{meta}</p><h3>{name}</h3></div>{score}'
+    return (f'<li class="ride" id="ride-{aid}"><div><p class="meta mono muted tnum">{meta}</p><h3>{name}</h3></div>{score}'
             f'<div>{strava}</div>{mix}<div class="state">{_state(job, csrf)}</div></li>')
 
 
@@ -302,7 +301,10 @@ def activities_page(athlete, jobs, csrf, code=""):
     backfill = (f'<div class="empty"><p>nothing yet. new rides show up here a minute or two after you upload them.</p>'
                 f'{explain}{button}</div>' if not jobs else f'<div class="empty">{explain}{button}</div>')
     hello = f", {escape(athlete['firstname'].lower())}" if athlete.get("firstname") else ""
-    body = f"""<h1>your rides{hello}.</h1>{summary}{notice(code)}{warn}{listing if jobs else backfill}{backfill if jobs else ""}"""
+    # while anything is queued, reload every few seconds (keeps the scroll position) so its status updates
+    refresh = ('<script>setTimeout(function () { location.reload(); }, 4000);</script>'
+               if any(j["status"] == "queued" for j in jobs) else "")
+    body = f"""{refresh}<h1>your rides{hello}.</h1>{summary}{notice(code)}{warn}{listing if jobs else backfill}{backfill if jobs else ""}"""
     return shell("rides", body, athlete, csrf, current="/")
 
 
