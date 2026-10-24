@@ -9,7 +9,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="site.webmanifest">
-<meta name="description" content="gritmeter adds four lines to every Strava ride: what surfaces you rode on and how rough it was.">
+<meta name="description" content="gritmeter adds three lines to every Strava ride: what surfaces you rode on and how rough it was.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@100..900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -95,7 +95,7 @@ h1 br { display: block; }
   padding-top: clamp(20px, 3vw, 28px); font-family: var(--mono); font-size: clamp(.875rem, 1.4vw, 1rem); line-height: 1.6; }
 .desc .ride { font-family: var(--display); font-weight: 800; letter-spacing: -.02em; font-size: 1.25rem; }
 .desc .mine { color: var(--ink-2); margin-top: 10px; }
-.desc .added { margin-top: 14px; border-left: 3px solid var(--accent); padding-left: clamp(14px, 2vw, 24px); }
+.desc .added { margin-top: 6px; border-left: 3px solid var(--accent); padding-left: clamp(14px, 2vw, 24px); }
 .desc .caption { font-family: var(--display); font-size: .875rem; color: var(--ink-2); margin-top: 16px; }
 
 /* good to know: question and answer rows */
@@ -166,7 +166,7 @@ footer p { margin: 0; }
     <div class="wrap">
       <h1>surface check<br> for every ride.</h1>
       <div class="pitch">
-        <p><span class="gm"><svg aria-hidden="true"><use href="#gm-mark"/></svg>gritmeter</span> adds four lines to every ride you upload to Strava: what you rode on, and how rough it was.</p>
+        <p><span class="gm"><svg aria-hidden="true"><use href="#gm-mark"/></svg>gritmeter</span> adds three lines to every ride you upload to Strava: what you rode on, and how rough it was.</p>
         <a class="btn" href="https://my.gritmeter.app/">get started</a>
       </div>
 
@@ -174,10 +174,9 @@ footer p { margin: 0; }
         <p class="ride">Brno gravel loop</p>
         <p class="mine">cold start, bakery stop at 40 km.</p>
         <div class="added">
-          <p>surface by gritmeter.app</p>
-          <p>73% asphalt · 11% hardpack · 7% rough · 6% gravel</p>
+          <p>surface: 73% asphalt · 11% hardpack · 7% rough · 6% gravel</p>
           <p>roughness 16 / 100, mixed</p>
-          <p>map data © OpenStreetMap contributors</p>
+          <p>-- From gritmeter.app · map data © OpenStreetMap contributors</p>
         </div>
         <figcaption class="caption">your words stay as you wrote them. <span class="gm"><svg aria-hidden="true"><use href="#gm-mark"/></svg>gritmeter</span> only writes, and later replaces, the lines marked in red.</figcaption>
       </figure>
