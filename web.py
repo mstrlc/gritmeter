@@ -7,6 +7,17 @@ Every page credits OpenStreetMap and says Powered by Strava.
 from html import escape
 
 import ride_rating as rr
+import store
+
+# grade labels shown next to the surface mix bar
+GRADES = {
+    "asphalt": "G0", "paved_rough": "G1", "hardpack": "G2", "gravel": "G3",
+    "dirt": "G4", "rough": "G5", "unknown": "G?",
+}
+
+# Strava sport_type -> how the settings and rides pages name it (lowercase copy, plural)
+RIDE_TYPE_NAMES = {"GravelRide": "gravel rides", "MountainBikeRide": "mountain bike rides", "Ride": "road and other rides",
+                   "EBikeRide": "e-bike rides", "EMountainBikeRide": "e-mountain bike rides"}
 
 CSS = """
 :root {
@@ -241,6 +252,8 @@ def _state(job, csrf):
                 + _action(aid, "remove", "remove from description", csrf))
     if s == "rated":
         why = {"auto-add off": "auto-add is off", "private ride": "private ride", "past ride": "ride from before you joined"}
+        if (d or "").startswith("type off "):
+            why[d] = RIDE_TYPE_NAMES.get(d.split()[-1], "this ride type") + " are off in settings"
         return (f'<span><span class="dot"></span>not added: {why.get(d, d)}</span>'
                 + _action(aid, "add", "add to description", csrf, line=False))
     if s == "dryrun":
@@ -297,6 +310,10 @@ def activities_page(athlete, jobs, csrf, code=""):
 
 def settings_page(athlete, csrf, code=""):
     checked = lambda key: " checked" if athlete.get(key) else ""
+    on = store.sport_types(athlete)
+    types = "".join(f'<label class="check"><input type="checkbox" name="type_{t}" value="1"'
+                    f'{" checked" if on is None or t in on else ""}><b>{name}</b></label>'
+                    for t, name in RIDE_TYPE_NAMES.items())
     scope_ok = "activity:write" in (athlete.get("scope") or "")
     permission = ("" if scope_ok else
                   '<div class="group"><h2>permission</h2><p>gritmeter can\'t edit your activities, so it can\'t add '
@@ -312,6 +329,10 @@ def settings_page(athlete, csrf, code=""):
 <label class="check"><input type="checkbox" name="skip_private" value="1"{checked("skip_private")}>
 <b>leave rides that only you can see alone</b>
 <span>they are still rated here.</span></label>
+<h2 style="margin-top:12px">which rides</h2>
+<p class="muted" style="font-size:.9375rem">{GM} adds the summary to these ride types. the others are still rated
+here, and you can add it ride by ride.</p>
+{types}
 <p><button class="btn" type="submit">save</button></p>
 </form>
 {permission}

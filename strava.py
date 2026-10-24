@@ -180,11 +180,12 @@ def recent_activity_ids(token, after):
     return [a["id"] for a in request("GET", f"{API}/athlete/activities?after={after}&per_page=50", token)]
 
 
-def process(activity_id, token, write=True, auto_write=True, skip_private=False, action=None):
+def process(activity_id, token, write=True, auto_write=True, skip_private=False, action=None, write_types=None):
     """Rate one activity and put our block in its description, following the rider's settings.
 
     write=False is a test run (never PUTs). action is the rider's explicit request: "write" (ignore auto_write and
-    skip_private), "remove" (take our block out) or "rate" (rate only: past rides). Returns a dict: status ("done", "rated", "dryrun", "removed",
+    skip_private), "remove" (take our block out) or "rate" (rate only: past rides). write_types limits automatic
+    writing to those sport_types (None = all rides). Returns a dict: status ("done", "rated", "dryrun", "removed",
     "skipped"), detail, result (rate() output or None), name, start_date. About 3 API calls per ride.
     """
     act = request("GET", f"{API}/activities/{activity_id}", token)
@@ -217,6 +218,8 @@ def process(activity_id, token, write=True, auto_write=True, skip_private=False,
             return out | {"status": "rated", "detail": "auto-add off"}
         if skip_private and act.get("visibility") == "only_me":
             return out | {"status": "rated", "detail": "private ride"}
+        if write_types is not None and act["sport_type"] not in write_types:
+            return out | {"status": "rated", "detail": f"type off {act['sport_type']}"}
     new = rr.merge_description(current, rr.description_block(r))
     if new == current:
         return out | {"status": "done", "detail": "unchanged"}

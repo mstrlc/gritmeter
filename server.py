@@ -242,6 +242,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.redirect("/?n=gone", [self.set_cookie("", 0)])
         if path == "/settings":
             store.save_settings(aid, **{k: form.get(k) == "1" for k in store.SETTINGS})
+            store.save_sport_types(aid, [t for t in strava.RIDE_TYPES if form.get(f"type_{t}") == "1"])
             return self.redirect("/settings?n=saved")
         if path == "/backfill":
             try:
@@ -310,7 +311,7 @@ def run_job(job, write):
         return store.finish(act, "failed", "athlete not connected")
     try:
         p = strava.process(act, strava.access_token(aid), write, bool(athlete["auto_write"]),
-                           bool(athlete["skip_private"]), job["action"])
+                           bool(athlete["skip_private"]), job["action"], store.sport_types(athlete))
     except strava.RateLimited:
         raise
     except Exception as e:

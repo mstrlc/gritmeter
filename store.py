@@ -45,6 +45,7 @@ MIGRATIONS = [
     ("jobs", "name", "TEXT"),
     ("jobs", "start_date", "TEXT"),                               # local start time, ISO
     ("jobs", "action", "TEXT"),                                   # rider's request: NULL (follow settings) | write | remove
+    ("athletes", "sport_types", "TEXT"),                          # comma list of ride types to write; NULL = all
 ]
 
 SETTINGS = ("auto_write", "skip_private")
@@ -108,6 +109,16 @@ def save_settings(athlete_id, **values):
     for key, value in values.items():
         if key in SETTINGS:
             db().execute(f"UPDATE athletes SET {key} = ? WHERE id = ?", (int(bool(value)), athlete_id))
+
+
+def save_sport_types(athlete_id, types):
+    """Which ride types (Strava sport_type values) get the summary automatically."""
+    db().execute("UPDATE athletes SET sport_types = ? WHERE id = ?", (",".join(sorted(types)), athlete_id))
+
+
+def sport_types(athlete):
+    """The athlete's ride types to write, as a set; None means all ride types."""
+    return None if athlete.get("sport_types") is None else set(filter(None, athlete["sport_types"].split(",")))
 
 
 def delete_athlete(athlete_id):
