@@ -8,3 +8,6 @@ maps/
 *.token
 __pycache__/
 .DS_Store
+
+# wrangler local cache
+.wrangler/
