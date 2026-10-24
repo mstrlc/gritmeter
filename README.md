@@ -65,6 +65,12 @@ To view the site locally, open `site/index.html` in a browser, or serve the fold
 python3 -m http.server -d site
 ```
 
+## License
+
+Copyright (c) 2026 Matyáš Strelec. The code is under the [GNU Affero General Public License v3.0](LICENSE): you can
+use, change and share it, and if you run a modified version as a public service, you must publish your changes under
+the same licence. OpenStreetMap data used by gritmeter remains under the [ODbL](https://www.openstreetmap.org/copyright).
+
 ## Credits
 
 Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright).
