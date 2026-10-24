@@ -86,18 +86,18 @@ def rate(points):
 # sign-off line at the end that also carries the OpenStreetMap credit:
 #   surface: 73% asphalt · 11% hardpack · 7% rough · 6% gravel
 #   roughness 16 / 100, mixed
-#   -- From gritmeter.app · map data © OpenStreetMap contributors
+#   - from gritmeter.app · map data © OpenStreetMap contributors
 
-SIGNOFF = "-- From gritmeter.app · map data © OpenStreetMap contributors"
+SIGNOFF = "- from gritmeter.app · map data © OpenStreetMap contributors"
 MIN_PCT = 5  # shares below this are left out of the summary line
 DESC_NAMES = {"paved_rough": "rough pavement"}
 
 # our block, newest format first; the earlier 4-line format (marker line ... credit line) is still recognised so a
-# re-run upgrades it in place. A block whose sign-off was edited away is still found by its first two lines.
+# re-run upgrades it in place (as is the earlier "-- From" sign-off). A block whose sign-off was edited away is still found by its first two lines.
 BLOCK_PATTERNS = [
-    re.compile(r"^surface: [^\r\n]*\r?\nroughness \d+ / 100, [^\r\n]*(?:\r?\n-- From gritmeter\.app[^\r\n]*)?", re.M),
+    re.compile(r"^surface: [^\r\n]*\r?\nroughness \d+ / 100, [^\r\n]*(?:\r?\n--? [Ff]rom gritmeter\.app[^\r\n]*)?", re.M),
     re.compile(r"^surface by gritmeter\.app(?:\r?\n(?!\r?\n)[^\r\n]*){0,2}(?:\r?\nmap data © OpenStreetMap contributors)?", re.M),
-    re.compile(r"^-- From gritmeter\.app[^\r\n]*", re.M),
+    re.compile(r"^--? [Ff]rom gritmeter\.app[^\r\n]*", re.M),
 ]
 
 
