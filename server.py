@@ -43,6 +43,8 @@ CATCHUP_EVERY = 6 * 3600   # seconds between catch-up passes
 CATCHUP_DAYS = 3           # how far back a catch-up pass looks (never before the athlete connected)
 BACKFILL_DAYS = 14         # "rate my last 14 days" on the rides page
 MAX_ATTEMPTS = 6           # then the job is marked failed
+NEW_DELAY = 180            # wait after an upload so other description apps (weather, Wandrer...) write first
+VERIFY_AFTER = 900         # one check this long after writing; restores our block if another app replaced it
 IDLE_POLL = 60             # worker re-checks the queue at least this often
 STATE_TTL = 600            # seconds an OAuth state stays valid
 SESSION_DAYS = 30
@@ -281,9 +283,8 @@ def handle_event(e):
     elif e["object_type"] == "activity" and e["aspect_type"] == "create":
         if not store.get_athlete(owner):
             return log(f"event for unknown athlete {owner}, ignored")
-        if store.enqueue(owner, obj):
-            log(f"queued {obj} (athlete {owner})")
-            wake.set()
+        if store.enqueue(owner, obj, delay=NEW_DELAY):
+            log(f"queued {obj} (athlete {owner}), due in {NEW_DELAY // 60} min")
 
 
 # ---------------------------------------------------------------- worker
@@ -295,7 +296,8 @@ def catch_up():
         try:
             a = store.get_athlete(aid)
             after = max(time.time() - CATCHUP_DAYS * 86400, a["connected_at"] or 0)
-            new = [i for i in strava.recent_activity_ids(strava.access_token(aid), after) if store.enqueue(aid, i)]
+            new = [i for i in strava.recent_activity_ids(strava.access_token(aid), after)
+                   if store.enqueue(aid, i, delay=NEW_DELAY)]
             if new:
                 log(f"catch-up: queued {len(new)} for athlete {aid}")
         except strava.RateLimited:
@@ -321,9 +323,25 @@ def run_job(job, write):
         if not isinstance(e, RuntimeError):
             traceback.print_exc()
         return
-    store.finish(act, p["status"], p["detail"], p["result"], p["name"], p["start_date"])
+    verify_at = time.time() + VERIFY_AFTER if p["detail"] == "written" else None
+    store.finish(act, p["status"], p["detail"], p["result"], p["name"], p["start_date"], verify_at)
     score = f" score {p['result']['score']}" if p["result"] else ""
     log(f"{act}: {p['status']} ({p['detail']}){score}")
+
+
+def run_verify(job):
+    """The one follow-up check of a written ride; a failure is logged and not retried."""
+    act = job["activity_id"]
+    try:
+        outcome = strava.restore_block(act, strava.access_token(job["athlete_id"]), job["result"])
+    except strava.RateLimited:
+        raise
+    except Exception as e:
+        outcome = None
+        log(f"{act}: follow-up check failed ({e})")
+    store.verified(act, "restored" if outcome == "restored" else None)
+    if outcome == "restored":
+        log(f"{act}: our block was gone after another edit, restored")
 
 
 def worker(write):
@@ -339,8 +357,11 @@ def worker(write):
                 catch_up()
                 next_catchup = time.time() + CATCHUP_EVERY
             job = store.next_job()
+            check = store.next_verify() if write and not job else None
             if job:
                 run_job(job, write)
+            elif check:
+                run_verify(check)
             else:
                 wake.wait(IDLE_POLL)
                 wake.clear()

@@ -46,6 +46,7 @@ MIGRATIONS = [
     ("jobs", "start_date", "TEXT"),                               # local start time, ISO
     ("jobs", "action", "TEXT"),                                   # rider's request: NULL (follow settings) | write | remove
     ("athletes", "sport_types", "TEXT"),                          # comma list of ride types to write; NULL = all
+    ("jobs", "verify_at", "REAL"),                                # when to check our written block is still there
 ]
 
 SETTINGS = ("auto_write", "skip_private")
@@ -129,17 +130,18 @@ def delete_athlete(athlete_id):
 
 # ---------------------------------------------------------------- jobs
 
-def enqueue(athlete_id, activity_id, action=None):
-    """Queue an activity unless it is already known. Returns True if newly queued."""
+def enqueue(athlete_id, activity_id, action=None, delay=0):
+    """Queue an activity unless it is already known, due in `delay` seconds. Returns True if newly queued."""
     now = time.time()
     cur = db().execute("INSERT OR IGNORE INTO jobs (activity_id, athlete_id, status, next_try, created, updated, action) "
-                       "VALUES (?, ?, 'queued', ?, ?, ?, ?)", (activity_id, athlete_id, now, now, now, action))
+                       "VALUES (?, ?, 'queued', ?, ?, ?, ?)", (activity_id, athlete_id, now + delay, now, now, action))
     return cur.rowcount == 1
 
 
 def request_action(athlete_id, activity_id, action):
     """Requeue one of the athlete's activities with an explicit write/remove request. Returns True if found."""
-    cur = db().execute("UPDATE jobs SET status = 'queued', action = ?, attempts = 0, next_try = ?, updated = ? "
+    cur = db().execute("UPDATE jobs SET status = 'queued', action = ?, attempts = 0, next_try = ?, updated = ?, "
+                       "verify_at = NULL "
                        "WHERE activity_id = ? AND athlete_id = ?",
                        (action, time.time(), time.time(), activity_id, athlete_id))
     return cur.rowcount == 1
@@ -164,14 +166,27 @@ def next_job():
     return dict(row) if row else None
 
 
-def finish(activity_id, status, detail=None, result=None, name=None, start_date=None):
+def finish(activity_id, status, detail=None, result=None, name=None, start_date=None, verify_at=None):
     """Record a processed job; clears any rider action. name/start_date, and the rating after a removal, are kept
-    if not given; a skip clears the rating."""
-    db().execute("""UPDATE jobs SET status = ?, detail = ?, action = NULL, updated = ?,
+    if not given; a skip clears the rating. verify_at schedules the one follow-up check of a written block."""
+    db().execute("""UPDATE jobs SET status = ?, detail = ?, action = NULL, updated = ?, verify_at = ?,
                       result = CASE WHEN ? = 'skipped' THEN NULL ELSE COALESCE(?, result) END,
                       name = COALESCE(?, name), start_date = COALESCE(?, start_date) WHERE activity_id = ?""",
-                 (status, detail, time.time(), status, json.dumps(result) if result else None, name, start_date,
-                  activity_id))
+                 (status, detail, time.time(), verify_at, status, json.dumps(result) if result else None, name,
+                  start_date, activity_id))
+
+
+def next_verify():
+    """A written ride whose follow-up check is due (only while it is still meant to carry our block), or None."""
+    row = db().execute("SELECT * FROM jobs WHERE status = 'done' AND verify_at <= ? ORDER BY verify_at LIMIT 1",
+                       (time.time(),)).fetchone()
+    return dict(row) | {"result": json.loads(row["result"]) if row["result"] else None} if row else None
+
+
+def verified(activity_id, detail=None):
+    """The follow-up check ran; it never runs twice."""
+    db().execute("UPDATE jobs SET verify_at = NULL, detail = COALESCE(?, detail), updated = ? WHERE activity_id = ?",
+                 (detail, time.time(), activity_id))
 
 
 def retry(activity_id, error, delay, max_attempts):

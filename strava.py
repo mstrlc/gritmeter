@@ -186,14 +186,14 @@ def process(activity_id, token, write=True, auto_write=True, skip_private=False,
     write=False is a test run (never PUTs). action is the rider's explicit request: "write" (ignore auto_write and
     skip_private), "remove" (take our block out) or "rate" (rate only: past rides). write_types limits automatic
     writing to those sport_types (None = all rides). Returns a dict: status ("done", "rated", "dryrun", "removed",
-    "skipped"), detail, result (rate() output or None), name, start_date. About 3 API calls per ride.
+    "skipped"), detail, result (rate() output or None), name, start_date. About 4 API calls per written ride.
     """
     act = request("GET", f"{API}/activities/{activity_id}", token)
     out = {"name": act.get("name"), "start_date": act.get("start_date_local"), "result": None}
     current = act.get("description") or ""
 
     if action == "remove":
-        new = rr.strip_block(current)
+        new = rr.strip_block(current)  # no slow step before the PUT, so this read is fresh enough
         if write and new != current:
             request("PUT", f"{API}/activities/{activity_id}", token, data={"description": new})
         return out | {"status": "removed" if write else "dryrun", "detail": "removed" if new != current else "not there"}
@@ -220,11 +220,32 @@ def process(activity_id, token, write=True, auto_write=True, skip_private=False,
             return out | {"status": "rated", "detail": "private ride"}
         if write_types is not None and act["sport_type"] not in write_types:
             return out | {"status": "rated", "detail": f"type off {act['sport_type']}"}
+    return out | {"status": "done", "detail": write_block(activity_id, token, r)}
+
+
+def write_block(activity_id, token, r):
+    """Put our block for rating r into the description; returns "written" or "unchanged".
+
+    Strava has no conditional update, so another app writing between our read and our write loses its text (or
+    ours). Reading right before the PUT, after the slow rating step, keeps that window to one round trip.
+    """
+    current = request("GET", f"{API}/activities/{activity_id}", token).get("description") or ""
     new = rr.merge_description(current, rr.description_block(r))
     if new == current:
-        return out | {"status": "done", "detail": "unchanged"}
+        return "unchanged"
     request("PUT", f"{API}/activities/{activity_id}", token, data={"description": new})
-    return out | {"status": "done", "detail": "written"}
+    return "written"
+
+
+def restore_block(activity_id, token, r):
+    """Follow-up check after writing: if another app replaced the description and our block is gone, add it back.
+    Returns "restored" or "still there"."""
+    current = request("GET", f"{API}/activities/{activity_id}", token).get("description") or ""
+    if rr.MARKER in current:
+        return "still there"
+    request("PUT", f"{API}/activities/{activity_id}", token,
+            data={"description": rr.merge_description(current, rr.description_block(r))})
+    return "restored"
 
 
 def deauthorize(token):
