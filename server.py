@@ -354,9 +354,10 @@ def worker(write):
 def main():
     strava.load_env("STRAVA_VERIFY_TOKEN", "SESSION_SECRET")
     write = "--dry-run" not in sys.argv
+    httpd = ThreadingHTTPServer((HOST, PORT), Handler)  # bind first: if the port is taken, no worker starts
     threading.Thread(target=worker, args=(write,), daemon=True, name="worker").start()
     log(f"listening on {HOST}:{PORT}, public URL {public_url()}{'' if write else ', DRY RUN (no descriptions written)'}")
-    ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
+    httpd.serve_forever()
 
 
 if __name__ == "__main__":
