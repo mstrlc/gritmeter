@@ -97,7 +97,7 @@ Uncovered tiles show as "unknown" until fetched; first ride in a new place is sl
    webhook at `https://my.gritmeter.app/webhook` via `strava.py subscribe`); check Strava accepts the `my.` subdomain as
    OAuth redirect under the `gritmeter.app` callback domain; the official Connect button (links straight to
    Strava's authorize URL, as the brand guidelines require) and Powered by Strava logo are in `site/strava/`; the
-   landing page links to my.gritmeter.app, so don't deploy the site before the app is reachable.
+   landing page shows "coming soon" until the app is reachable; then link its buttons to my.gritmeter.app.
 
 ## Open questions
 - Personal-only vs. open to other riders (drives Strava approval and Phase 4).
