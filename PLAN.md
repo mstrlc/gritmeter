@@ -20,7 +20,7 @@ Strava webhook (activity created) -> POST /webhook (200 in <2 s, enqueue only)
   -> worker: refresh token -> GET streams -> analyse(points) -> store result -> PUT description
 ```
 - Append, never overwrite: add our block after the rider's text; it is recognised by its `surface: ...` and
-  `roughness N / 100` lines and its `-- From gritmeter.app` sign-off (the older 4-line block too), and re-runs replace
+  `roughness N / 100` lines and its `- from gritmeter.app` sign-off (the older 4-line block too), and re-runs replace
   only that block, where it stands.
 - Other description apps (KlimatApp, Wandrer, ...) write the same field and Strava has no conditional update, so the
   last write wins (decided 2026-10-25): new uploads wait 3 min so they write first; the description is re-read right
@@ -43,7 +43,7 @@ Strava webhook (activity created) -> POST /webhook (200 in <2 s, enqueue only)
   ```
   surface: 73% asphalt · 11% hardpack · 7% rough · 6% gravel
   roughness 16 / 100, mixed
-  -- From gritmeter.app · map data © OpenStreetMap contributors
+  - from gritmeter.app · map data © OpenStreetMap contributors
   ```
   Line 1 lists surfaces largest first, leaving out shares under 5% (`ride_rating.MIN_PCT`); paved_rough reads
   "rough pavement". Score rounded to
