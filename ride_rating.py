@@ -81,21 +81,31 @@ def rate(points):
 
 
 # ---------------------------------------------------------------- Strava description block (format fixed in PLAN.md)
+#
+# Written like the other description apps (KlimatApp, Wandrer): a few lines straight after the previous text, with a
+# sign-off line at the end that also carries the OpenStreetMap credit:
+#   surface: 73% asphalt · 11% hardpack · 7% rough · 6% gravel
+#   roughness 16 / 100, mixed
+#   -- From gritmeter.app · map data © OpenStreetMap contributors
 
-MARKER = "surface by gritmeter.app"
-CREDIT = "map data © OpenStreetMap contributors"
+SIGNOFF = "-- From gritmeter.app · map data © OpenStreetMap contributors"
 MIN_PCT = 5  # shares below this are left out of the summary line
 DESC_NAMES = {"paved_rough": "rough pavement"}
 
+# our block, newest format first; the earlier 4-line format (marker line ... credit line) is still recognised so a
+# re-run upgrades it in place. A block whose sign-off was edited away is still found by its first two lines.
+BLOCK_PATTERNS = [
+    re.compile(r"^surface: [^\r\n]*\r?\nroughness \d+ / 100, [^\r\n]*(?:\r?\n-- From gritmeter\.app[^\r\n]*)?", re.M),
+    re.compile(r"^surface by gritmeter\.app(?:\r?\n(?!\r?\n)[^\r\n]*){0,2}(?:\r?\nmap data © OpenStreetMap contributors)?", re.M),
+    re.compile(r"^-- From gritmeter\.app[^\r\n]*", re.M),
+]
+
 
 def description_block(r):
-    """The 4-line block gritmeter appends to an activity description."""
+    """The 3-line block gritmeter adds to an activity description."""
     shares = sorted(((p, k) for k, p in r["pct"].items() if p >= MIN_PCT), reverse=True)
     mix = " · ".join(f"{int(p + 0.5)}% {DESC_NAMES.get(k, k)}" for p, k in shares)  # half up, not to even
-    return f"{MARKER}\n{mix}\nroughness {int(r['score'] + 0.5)} / 100, {r['label']}\n{CREDIT}"
-
-
-BLANK_LINE = re.compile(r"\r?\n[ \t]*\r?\n")
+    return f"surface: {mix}\nroughness {int(r['score'] + 0.5)} / 100, {r['label']}\n{SIGNOFF}"
 
 
 def _eol(text):
@@ -104,38 +114,39 @@ def _eol(text):
 
 
 def _block_span(text):
-    """(start, end) of our block in text, or None. It runs from the marker to the end of its credit line; if the
-    credit line was edited away, to the end of the marker's paragraph, so text after it is never swallowed."""
-    start = text.find(MARKER)
-    if start == -1:
-        return None
-    end = text.find(CREDIT, start)
-    para = BLANK_LINE.search(text, start)
-    if end != -1 and (para is None or para.start() > end):
-        return start, end + len(CREDIT)
-    return start, len(text) if para is None else para.start()
+    """(start, end) of our block in text, or None."""
+    for pattern in BLOCK_PATTERNS:
+        m = pattern.search(text)
+        if m:
+            return m.span()
+    return None
+
+
+def has_block(text):
+    return _block_span(text or "") is not None
+
+
+def _join(before, block, after, eol):
+    """before + block + after, one line break apart (the other apps' style), skipping empty parts."""
+    return eol.join(part for part in (before.rstrip(), block, after.lstrip("\r\n")) if part)
 
 
 def strip_block(text):
-    """The rider's text with our block taken out; the text before and after it stays one blank line apart."""
+    """The rider's text with our block taken out."""
     text = text or ""
     span = _block_span(text)
     if not span:
         return text
-    before, after = text[:span[0]].rstrip(), text[span[1]:].strip()
-    return before + _eol(text) * 2 + after if before and after else before or after
+    return _join(text[:span[0]], "", text[span[1]:], _eol(text))
 
 
 def merge_description(text, block):
-    """Our block in the rider's text: replaced where it already is, otherwise appended after one blank line.
+    """Our block in the rider's text: replaced where it already is, otherwise added on the line after the last text.
     The block takes the description's line endings."""
     text = text or ""
     eol = _eol(text)
-    block = block.replace("\n", eol)
-    span = _block_span(text)
-    if span:
-        return text[:span[0]] + block + text[span[1]:]
-    return text.rstrip() + eol * 2 + block if text.strip() else block
+    span = _block_span(text) or (len(text), len(text))
+    return _join(text[:span[0]], block.replace("\n", eol), text[span[1]:], eol)
 
 
 def main():

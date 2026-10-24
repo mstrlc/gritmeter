@@ -241,7 +241,7 @@ def restore_block(activity_id, token, r):
     """Follow-up check after writing: if another app replaced the description and our block is gone, add it back.
     Returns "restored" or "still there"."""
     current = request("GET", f"{API}/activities/{activity_id}", token).get("description") or ""
-    if rr.MARKER in current:
+    if rr.has_block(current):
         return "still there"
     request("PUT", f"{API}/activities/{activity_id}", token,
             data={"description": rr.merge_description(current, rr.description_block(r))})
