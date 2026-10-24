@@ -56,6 +56,10 @@ For now it holds only the website:
 
 - `site/index.html`: the landing page for gritmeter.app. Plain HTML and CSS, no build step.
 - `site/favicon.svg`: the gritmeter mark.
+- `site/_headers`: security and caching headers for Cloudflare Pages.
+- `functions/_middleware.js`: redirects www.gritmeter.app to gritmeter.app.
+
+The site deploys to Cloudflare Pages from `main`: no build command, build output directory `site`.
 
 The analysis pipeline and the Strava integration will follow.
 
