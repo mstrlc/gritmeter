@@ -4,6 +4,7 @@ Server-rendered with the standard library; styles follow design/identity.html (E
 for what gritmeter writes and data values; paper/ink neutrals; rough red only for gritmeter's own lines and focus).
 Every page credits OpenStreetMap and says Powered by Strava.
 """
+import datetime
 from html import escape
 
 import ride_rating as rr
@@ -50,10 +51,25 @@ a { color: inherit; text-underline-offset: 3px; }
 .top { border-bottom: 1px solid var(--ink); }
 .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 76px; flex-wrap: wrap; }
 .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 900; letter-spacing: -.06em; font-size: 1.5rem; }
-.top nav { display: flex; align-items: center; gap: clamp(12px, 2.5vw, 24px); flex-wrap: wrap; }
-.top nav a { text-decoration: none; font-weight: 700; }
-.top nav a[aria-current="page"] { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; }
-.linkish { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: inherit; cursor: pointer; }
+.top nav { margin-left: auto; }
+.tools { display: flex; align-items: center; gap: clamp(12px, 2.5vw, 24px); }
+/* phones: logo, sign out and theme on one row; the page tabs full width below */
+@media (max-width: 560px) {
+  .top .wrap { gap: 12px; padding-block: 12px; min-height: 0; }
+  .top nav { order: 3; flex-basis: 100%; margin-left: 0; }
+  .tabs a { flex: 1; justify-content: center; }
+  .linkish .label { display: none; }
+}
+/* page switch: boxed segments like the theme switch; the current page is filled */
+.tabs { display: flex; border: 1px solid var(--ink); }
+.tabs a { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; text-decoration: none; font-weight: 700; font-size: .9375rem; }
+.tabs a + a { border-left: 1px solid var(--ink); }
+.tabs a:hover { background: var(--paper-2); }
+.tabs a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+.linkish { display: inline-flex; align-items: center; gap: 7px; background: none; border: 0; padding: 0; font: inherit; font-weight: 700;
+  font-size: .9375rem; color: inherit; cursor: pointer; }
+.linkish:hover { text-decoration: underline; text-underline-offset: 4px; }
+.ico { width: 16px; height: 16px; flex: none; }
 .theme { display: flex; border: 1px solid var(--ink); }
 .theme button { display: grid; place-items: center; width: 36px; height: 32px; background: none; color: var(--ink); border: 0; padding: 0; cursor: pointer; }
 .theme svg { width: 16px; height: 16px; }
@@ -87,27 +103,44 @@ h2 { font-weight: 900; letter-spacing: -.04em; line-height: 1; font-size: 1.75re
 .gm { font-weight: 900; letter-spacing: -.04em; white-space: nowrap; }
 .gm svg { width: .78em; height: .78em; fill: currentColor; vertical-align: -.04em; margin-right: .25em; }
 
-/* activities */
+/* rides: subheading, stats strip, rides grouped by month, skipped activities folded away at the end */
 .summary { margin-top: 12px; font-size: .9375rem; }
-.rides { list-style: none; margin: 32px 0 0; padding: 0; border-top: 1px solid var(--ink); }
-.ride { scroll-margin-top: 24px; padding: 22px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 24px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 28px; border: 1px solid var(--ink); }
+.stats div { padding: 14px 16px 12px; }
+.stats div + div { border-left: 1px solid var(--ink); }
+.stats b { display: block; font-weight: 900; font-size: 2rem; letter-spacing: -.04em; line-height: 1; }
+.stats span { display: block; margin-top: 6px; font-size: .8125rem; color: var(--ink-2); line-height: 1.3; }
+.month { margin-top: 44px; padding-bottom: 10px; border-bottom: 1px solid var(--ink); font-size: 1.25rem; letter-spacing: -.03em; }
+.rides { list-style: none; margin: 0; padding: 0; }
+.ride { scroll-margin-top: 24px; padding: 20px 0 18px; border-bottom: 1px solid var(--rule);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 24px; }
 .ride .meta { font-size: .8125rem; }
 .ride h3 { font-weight: 800; letter-spacing: -.02em; font-size: 1.25rem; line-height: 1.2; }
-.ride h3 a { text-decoration: none; }
-.ride .score { grid-row: span 2; align-self: start; text-align: right; }
-.ride .score b { display: block; font-weight: 900; font-size: 2.6rem; letter-spacing: -.05em; line-height: .9; }
-.badge { display: inline-block; margin-top: 6px; font-family: var(--mono); font-weight: 500; font-size: .6875rem; letter-spacing: .14em;
+.ride .score { align-self: start; display: flex; align-items: center; gap: 10px; }
+.ride .score b { font-weight: 900; font-size: 2.4rem; letter-spacing: -.05em; line-height: .9; }
+.badge { display: inline-block; font-family: var(--mono); font-weight: 500; font-size: .6875rem; letter-spacing: .14em;
   text-transform: uppercase; padding: 3px 7px 2px; background: var(--ink); color: var(--paper); }
-.mix { grid-column: 1 / -1; display: flex; gap: 2px; height: 10px; margin-top: 8px; }
+.mix { grid-column: 1 / -1; display: flex; gap: 2px; height: 10px; margin-top: 10px; }
 .mix i { height: 100%; min-width: 2px; }
 .mixtext { grid-column: 1 / -1; font-size: .8125rem; }
-.state { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 6px; font-size: .9375rem; }
-.state .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-2); margin-right: 8px; vertical-align: 1px; }
-.state .dot.on { background: var(--accent); }
-.ride.skipped { grid-template-columns: 1fr; padding: 12px 0; color: var(--ink-2); }
-.ride.skipped h3 { font-size: 1rem; font-weight: 600; }
-.strava-link { font-size: .875rem; font-weight: 700; }
-.empty { margin-top: 32px; padding: 28px; border: 1px solid var(--rule); display: grid; gap: 16px; justify-items: start; }
+.foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: 10px; }
+.status { font-size: .9375rem; }
+.status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-2); margin-right: 8px; vertical-align: 1px; }
+.status .dot.on { background: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.strava-link { display: inline-flex; align-items: center; gap: 5px; font-size: .875rem; font-weight: 700; text-underline-offset: 3px; }
+.strava-link .ico { width: 14px; height: 14px; }
+.skipped-list { margin-top: 44px; border-top: 1px solid var(--ink); }
+.skipped-list summary { cursor: pointer; padding: 14px 0; font-weight: 700; }
+.skipped-list ul { list-style: none; margin: 0; padding: 0; }
+.skipped-list li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; padding: 10px 0; border-top: 1px solid var(--rule);
+  color: var(--ink-2); font-size: .9375rem; }
+.empty { margin-top: 40px; padding: 24px; border: 1px solid var(--rule); display: grid; gap: 14px; justify-items: start; }
+@media (max-width: 560px) {
+  .stats b { font-size: 1.5rem; }
+  .stats div { padding: 12px 10px 10px; }
+  .ride .score b { font-size: 2rem; }
+}
 
 /* settings */
 .group { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--ink); display: grid; gap: 20px; max-width: 40em; }
@@ -132,6 +165,27 @@ THEME_SWITCH = """<div class="theme" role="group" aria-label="Colour theme">
 <button type="button" data-t="light" aria-pressed="false" aria-label="Light theme" title="light"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg></button>
 <button type="button" data-t="dark" aria-pressed="false" aria-label="Dark theme" title="dark"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
 </div>"""
+
+# 16px line icons in the theme switch's style (1.8 stroke, round caps), drawn in currentColor
+ICONS = {
+    "plus": '<path d="M12 5v14M5 12h14"/>',
+    "minus": '<path d="M5 12h14"/>',
+    "retry": '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/>',
+    "history": '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 3v6h6"/><path d="M12 7v5l3 2"/>',
+    "external": '<path d="M7 17 17 7M8 7h9v9"/>',
+    "check": '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    "trash": '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+    "logout": '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',
+    "list": '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
+    "sliders": '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+    "key": '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3"/>',
+}
+
+
+def icon(name):
+    return (f'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+            f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS[name]}</svg>')
+
 
 THEME_JS = """<script>
 (function () {
@@ -163,12 +217,15 @@ NOTICES = {
 
 def shell(title, body, athlete=None, csrf="", current=""):
     """Full page: header (nav when signed in), main, credits footer."""
-    nav = ""
+    nav, signout = "", ""
     if athlete:
-        link = lambda href, text: f'<a href="{href}"{" aria-current=page" if current == href else ""}>{text}</a>'
-        nav = (link("/", "rides") + link("/settings", "settings")
-               + f'<form method="post" action="/logout"><input type="hidden" name="csrf" value="{csrf}">'
-               '<button class="linkish" type="submit">sign out</button></form>')
+        link = lambda href, ico, text: (f'<a href="{href}"{" aria-current=page" if current == href else ""}>'
+                                        f'{icon(ico)}{text}</a>')
+        nav = (f'<nav aria-label="main"><div class="tabs">{link("/", "list", "rides")}'
+               f'{link("/settings", "sliders", "settings")}</div></nav>')
+        signout = (f'<form method="post" action="/logout"><input type="hidden" name="csrf" value="{csrf}">'
+                   f'<button class="linkish" type="submit" aria-label="sign out">{icon("logout")}<span class="label">sign out</span>'
+                   f'</button></form>')
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -185,7 +242,7 @@ def shell(title, body, athlete=None, csrf="", current=""):
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="gritmeter home">{MARK}gritmeter</a>
-<nav aria-label="main">{nav}{THEME_SWITCH}</nav>
+{nav}<div class="tools">{signout}{THEME_SWITCH}</div>
 </div></header>
 <main><div class="wrap">{body}</div></main>
 <footer><div class="wrap">
@@ -202,7 +259,7 @@ def notice(code):
 
 
 def login_page(authorize_url, code=""):
-    body = f"""<h1>sign in.</h1>
+    body = f"""<h1>sign in</h1>
 <p class="lede">connect your Strava account and {GM} adds a surface summary to every ride you upload. here you can
 see what it rated and change how it writes.</p>
 {notice(code)}
@@ -228,9 +285,14 @@ def _mix(pct):
     return f'<div class="mix" aria-hidden="true">{bar}</div><p class="mixtext mono muted">{escape(text)}</p>'
 
 
-def _action(activity_id, action, label, csrf, line=True):
+def _action(activity_id, action, ico, label, csrf, line=True):
     return (f'<form method="post" action="/activity/{activity_id}/{action}"><input type="hidden" name="csrf" '
-            f'value="{csrf}"><button class="btn sm{" line" if line else ""}" type="submit">{label}</button></form>')
+            f'value="{csrf}"><button class="btn sm{" line" if line else ""}" type="submit">{icon(ico)}{label}</button></form>')
+
+
+def _strava_link(activity_id):
+    return (f'<a class="strava-link" href="https://www.strava.com/activities/{activity_id}">View on Strava'
+            f'{icon("external")}</a>')
 
 
 def _skip_reason(detail):
@@ -241,68 +303,107 @@ def _skip_reason(detail):
 
 
 def _state(job, csrf):
-    """Status line and the action that fits it."""
+    """(status text, action button) for a ride."""
     s, d, aid = job["status"], job["detail"], job["activity_id"]
+    dot = '<span class="dot"></span>'
     if s == "queued":
         what = {"write": "adding the summary", "remove": "removing the summary"}.get(job["action"], "in the queue")
-        return f'<span><span class="dot"></span>{what}…</span>'
+        return f"{dot}{what}…", ""
     if s == "done":
-        return ('<span><span class="dot on"></span>summary in the description</span>'
-                + _action(aid, "remove", "remove from description", csrf))
+        return ('<span class="dot on"></span>in the description',
+                _action(aid, "remove", "minus", "remove", csrf))
     if s == "rated":
         why = {"auto-add off": "auto-add is off", "private ride": "private ride", "past ride": "ride from before you joined"}
         if (d or "").startswith("type off "):
-            why[d] = RIDE_TYPE_NAMES.get(d.split()[-1], "this ride type") + " are off in settings"
-        return (f'<span><span class="dot"></span>not added: {why.get(d, d)}</span>'
-                + _action(aid, "add", "add to description", csrf, line=False))
+            why[d] = RIDE_TYPE_NAMES.get(d.split()[-1], "this ride type") + " are off"
+        return f"{dot}not added: {why.get(d, d)}", _action(aid, "add", "plus", "add to description", csrf, line=False)
     if s == "dryrun":
-        return ('<span><span class="dot"></span>rated in a test run, not added</span>'
-                + _action(aid, "add", "add to description", csrf, line=False))
+        return f"{dot}rated in a test run", _action(aid, "add", "plus", "add to description", csrf, line=False)
     if s == "removed":
-        return ('<span><span class="dot"></span>removed from the description</span>'
-                + _action(aid, "add", "add again", csrf))
+        return f"{dot}removed from the description", _action(aid, "add", "plus", "add again", csrf)
     if s == "failed":
-        return ('<span><span class="dot"></span>couldn\'t process this ride</span>'
-                + _action(aid, "retry", "try again", csrf))
-    return f"<span>{escape(s)}</span>"
+        return f"{dot}couldn't process this ride", _action(aid, "retry", "retry", "try again", csrf)
+    return escape(s), ""
+
+
+DAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+MONTHS = ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october",
+          "november", "december")
+
+
+def _day(start_date):
+    """'sun 20 oct' from an ISO local start time ('' if unknown)."""
+    try:
+        d = datetime.date.fromisoformat(start_date[:10])
+    except (TypeError, ValueError):
+        return ""
+    return f"{DAYS[d.weekday()]} {d.day} {MONTHS[d.month - 1][:3]}"
+
+
+def _month(start_date):
+    try:
+        d = datetime.date.fromisoformat(start_date[:10])
+    except (TypeError, ValueError):
+        return "date unknown"
+    return f"{MONTHS[d.month - 1]} {d.year}"
 
 
 def _ride(job, csrf):
     aid, r = job["activity_id"], job["result"]
     name = escape(job["name"] or f"activity {aid}")
-    when = (job["start_date"] or "")[:10]
-    strava = f'<a class="strava-link" href="https://www.strava.com/activities/{aid}">View on Strava</a>'
-    if job["status"] == "skipped":
-        meta = " · ".join(x for x in (when, f'skipped: {escape(_skip_reason(job["detail"]))}') if x)
-        return f'<li class="ride skipped" id="ride-{aid}"><h3>{name}</h3><p class="meta"><span class="mono tnum">{meta}</span> · {strava}</p></li>'
-    meta = " · ".join(x for x in (when, f'{r["km"]} km' if r else "") if x)
-    score = (f'<div class="score"><b class="tnum">{int(r["score"] + .5)}</b><span class="badge">{escape(r["label"])}</span></div>'
+    meta = " · ".join(x for x in (_day(job["start_date"]), f'{r["km"]} km' if r else "") if x)
+    score = (f'<div class="score"><span class="badge">{escape(r["label"])}</span><b class="tnum">{int(r["score"] + .5)}</b></div>'
              if r else '<div class="score"></div>')
-    mix = _mix(r["pct"]) if r else ""
+    status, button = _state(job, csrf)
     return (f'<li class="ride" id="ride-{aid}"><div><p class="meta mono muted tnum">{meta}</p><h3>{name}</h3></div>{score}'
-            f'<div>{strava}</div>{mix}<div class="state">{_state(job, csrf)}</div></li>')
+            f'{_mix(r["pct"]) if r else ""}'
+            f'<div class="foot"><p class="status">{status}</p><div class="actions">{button}{_strava_link(aid)}</div></div></li>')
+
+
+def _skipped(jobs):
+    """Activities gritmeter didn't rate, folded into one list at the end."""
+    if not jobs:
+        return ""
+    def row(j):
+        meta = " · ".join(x for x in (_day(j["start_date"]), escape(_skip_reason(j["detail"]))) if x)
+        return (f'<li id="ride-{j["activity_id"]}"><span>{escape(j["name"] or "activity")}'
+                f'<span class="mono tnum"> · {meta}</span></span>{_strava_link(j["activity_id"])}</li>')
+    rows = "".join(row(j) for j in jobs)
+    return (f'<details class="skipped-list"><summary>{_n(len(jobs), "activity").replace("activitys", "activities")} '
+            f'skipped</summary><ul>{rows}</ul></details>')
 
 
 def activities_page(athlete, jobs, csrf, code=""):
-    rated = [j for j in jobs if j["result"]]
-    written = sum(j["status"] == "done" for j in jobs)
+    rides = [j for j in jobs if j["status"] != "skipped"]
+    skipped = [j for j in jobs if j["status"] == "skipped"]
+    rated = [j["result"] for j in rides if j["result"]]
+    written = sum(j["status"] == "done" for j in rides)
     warn = notice("noscope") if "activity:write" not in (athlete.get("scope") or "") and code != "noscope" else ""
-    # subheading: who is signed in, then the counts once there are rides
-    parts = [escape(athlete["firstname"])] if athlete.get("firstname") else []
-    if jobs:
-        parts += [f'{_n(len(rated), "ride")} rated', f"{written} with the summary in the description"]
-    summary = f'<p class="summary mono muted tnum">{" · ".join(parts)}</p>' if parts else ""
-    listing = '<ul class="rides">' + "".join(_ride(j, csrf) for j in jobs) + "</ul>" if jobs else ""
-    button = (f'<form method="post" action="/backfill"><input type="hidden" name="csrf" value="{csrf}">'
-              f'<button class="btn line sm" type="submit">rate my last 14 days</button></form>')
-    explain = (f'<p class="muted">want to see what {GM} makes of rides from before you joined? it rates rides from '
-               f'the last 14 days here, without touching their descriptions.</p>')
-    backfill = (f'<div class="empty"><p>nothing yet. new rides show up here a minute or two after you upload them.</p>'
-                f'{explain}{button}</div>' if not jobs else f'<div class="empty">{explain}{button}</div>')
+    summary = f'<p class="summary mono muted">{escape(athlete["firstname"])}</p>' if athlete.get("firstname") else ""
+
+    stats = ""
+    if rated:
+        avg = int(sum(r["score"] for r in rated) / len(rated) + .5)
+        stats = (f'<div class="stats"><div><b class="tnum">{len(rated)}</b><span>rides rated</span></div>'
+                 f'<div><b class="tnum">{written}</b><span>with the summary</span></div>'
+                 f'<div><b class="tnum">{avg}</b><span>average roughness</span></div></div>')
+
+    groups, listing = {}, ""
+    for j in rides:  # already newest first
+        groups.setdefault(_month(j["start_date"]), []).append(j)
+    for month, js in groups.items():
+        listing += f'<h2 class="month">{month}</h2><ul class="rides">' + "".join(_ride(j, csrf) for j in js) + "</ul>"
+
+    backfill = (f'<div class="empty">{"<p>nothing yet. new rides show up here a minute or two after you upload them.</p>" if not jobs else ""}'
+                f'<p class="muted">want to see what {GM} makes of rides from before you joined? it rates rides from '
+                f'the last 14 days here, without touching their descriptions.</p>'
+                f'<form method="post" action="/backfill"><input type="hidden" name="csrf" value="{csrf}">'
+                f'<button class="btn line sm" type="submit">{icon("history")}rate my last 14 days</button></form></div>')
     # while anything is queued, reload every few seconds (keeps the scroll position) so its status updates
     refresh = ('<script>setTimeout(function () { location.reload(); }, 4000);</script>'
                if any(j["status"] == "queued" for j in jobs) else "")
-    body = f"""{refresh}<h1>your rides.</h1>{summary}{notice(code)}{warn}{listing if jobs else backfill}{backfill if jobs else ""}"""
+    body = (f"{refresh}<h1>your rides</h1>{summary}{notice(code)}{warn}{stats}"
+            f"{listing}{_skipped(skipped)}{backfill}")
     return shell("rides", body, athlete, csrf, current="/")
 
 
@@ -318,8 +419,8 @@ def settings_page(athlete, csrf, code=""):
     permission = ("" if scope_ok else
                   '<div class="group"><h2>permission</h2><p>gritmeter can\'t edit your activities, so it can\'t add '
                   'the summary. sign in again and keep "upload activities" ticked.</p>'
-                  '<p><a class="btn" href="/login">sign in again</a></p></div>')
-    body = f"""<h1>settings.</h1>{notice(code)}
+                  f'<p><a class="btn" href="/login">{icon("key")}sign in again</a></p></div>')
+    body = f"""<h1>settings</h1>{notice(code)}
 <form class="group" method="post" action="/settings">
 <input type="hidden" name="csrf" value="{csrf}">
 <h2>writing</h2>
@@ -333,7 +434,7 @@ def settings_page(athlete, csrf, code=""):
 <p class="muted" style="font-size:.9375rem">{GM} adds the summary to these ride types. the others are still rated
 here, and you can add it ride by ride.</p>
 {types}
-<p><button class="btn" type="submit">save</button></p>
+<p><button class="btn" type="submit">{icon("check")}save</button></p>
 </form>
 {permission}
 <div class="group">
@@ -341,6 +442,6 @@ here, and you can add it ride by ride.</p>
 <p>this revokes {GM}'s access on Strava and deletes everything it stored about you: your sign-in, settings and ride
 results. summaries already in your descriptions stay; remove them from the rides page first if you want them gone.</p>
 <form method="post" action="/disconnect"><input type="hidden" name="csrf" value="{csrf}">
-<button class="btn line" type="submit">disconnect and delete my data</button></form>
+<button class="btn line" type="submit">{icon("trash")}disconnect and delete my data</button></form>
 </div>"""
     return shell("settings", body, athlete, csrf, current="/settings")
