@@ -15,7 +15,8 @@ map data © OpenStreetMap contributors
 Your own text stays as you wrote it. gritmeter only adds its block below, and replaces just that block if a ride is
 analysed again.
 
-**Status:** not live yet. [gritmeter.app](https://gritmeter.app) shows the landing page; connecting Strava is coming soon.
+**Status:** not live yet. [gritmeter.app](https://gritmeter.app) shows the landing page; riders will connect Strava and
+manage their rides at [my.gritmeter.app](https://my.gritmeter.app) once it is deployed.
 
 ## How it works
 
@@ -52,17 +53,23 @@ The classifier is tuned on rides in Czechia, so other regions may read less accu
 
 ## This repository
 
-For now it holds only the website:
+Analysis pipeline (plain Python scripts; see `CLAUDE.md` for commands and `PLAN.md` for the roadmap):
+
+- `surface_mix.py`: OSM tile fetch/cache, snapping the track to OSM ways.
+- `ride_rating.py`: the six grades, the roughness score and the description block.
+- `strava.py`: Strava OAuth, GPS streams and the description writer.
+- `extract_osm.py`: builds the OSM tile cache from Geofabrik extracts.
+
+Website:
 
 - `site/index.html`: the landing page for gritmeter.app. Plain HTML and CSS, no build step.
 - `site/favicon.svg`: the gritmeter mark.
+- `site/strava/`: Strava's official Connect button and Powered by Strava logos, unmodified (also served by `server.py`).
 - `site/_headers`: security and caching headers.
 - `wrangler.jsonc` + `src/worker.js`: Cloudflare Workers config. The worker redirects www.gritmeter.app to
   gritmeter.app and serves everything else from `site/`.
 
 The site deploys to Cloudflare Workers on every push to `main` (`npx wrangler deploy`, no build step).
-
-The analysis pipeline and the Strava integration will follow.
 
 To view the site locally, open `site/index.html` in a browser, or serve the folder:
 
