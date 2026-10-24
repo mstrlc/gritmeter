@@ -1,0 +1,10 @@
+# personal ride data, OSM tiles and extracts (GPS tracks show where riders live; never commit)
+data/
+maps/
+
+# local environment and secrets
+.venv/
+.env
+*.token
+__pycache__/
+.DS_Store
