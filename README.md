@@ -56,10 +56,11 @@ For now it holds only the website:
 
 - `site/index.html`: the landing page for gritmeter.app. Plain HTML and CSS, no build step.
 - `site/favicon.svg`: the gritmeter mark.
-- `site/_headers`: security and caching headers for Cloudflare Pages.
-- `functions/_middleware.js`: redirects www.gritmeter.app to gritmeter.app.
+- `site/_headers`: security and caching headers.
+- `wrangler.jsonc` + `src/worker.js`: Cloudflare Workers config. The worker redirects www.gritmeter.app to
+  gritmeter.app and serves everything else from `site/`.
 
-The site deploys to Cloudflare Pages from `main`: no build command, build output directory `site`.
+The site deploys to Cloudflare Workers on every push to `main` (`npx wrangler deploy`, no build step).
 
 The analysis pipeline and the Strava integration will follow.
 

@@ -1,0 +1,11 @@
+// Cloudflare Workers config: serve site/ as static assets; src/worker.js runs first to redirect www to the apex.
+{
+  "name": "gritmeter",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./site",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  }
+}
