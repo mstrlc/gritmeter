@@ -4,6 +4,7 @@
 Reuses the matching pipeline from surface_mix.py; only the classifier differs.
 """
 import json
+import re
 from collections import Counter
 
 import surface_mix as sm
@@ -94,21 +95,47 @@ def description_block(r):
     return f"{MARKER}\n{mix}\nroughness {int(r['score'] + 0.5)} / 100, {r['label']}\n{CREDIT}"
 
 
-def strip_block(text):
-    """The rider's text with our block (marker to its credit line) taken out."""
-    text = text or ""
+BLANK_LINE = re.compile(r"\r?\n[ \t]*\r?\n")
+
+
+def _eol(text):
+    """The line ending the description already uses (other apps often write \\r\\n), so ours matches."""
+    return "\r\n" if "\r\n" in text else "\n"
+
+
+def _block_span(text):
+    """(start, end) of our block in text, or None. It runs from the marker to the end of its credit line; if the
+    credit line was edited away, to the end of the marker's paragraph, so text after it is never swallowed."""
     start = text.find(MARKER)
     if start == -1:
-        return text
+        return None
     end = text.find(CREDIT, start)
-    tail = text[end + len(CREDIT):] if end != -1 else ""
-    return (text[:start].rstrip() + "\n\n" + tail.strip()).strip()
+    para = BLANK_LINE.search(text, start)
+    if end != -1 and (para is None or para.start() > end):
+        return start, end + len(CREDIT)
+    return start, len(text) if para is None else para.start()
+
+
+def strip_block(text):
+    """The rider's text with our block taken out; the text before and after it stays one blank line apart."""
+    text = text or ""
+    span = _block_span(text)
+    if not span:
+        return text
+    before, after = text[:span[0]].rstrip(), text[span[1]:].strip()
+    return before + _eol(text) * 2 + after if before and after else before or after
 
 
 def merge_description(text, block):
-    """Append our block to the rider's text, replacing a previous block of ours."""
-    text = strip_block(text) if MARKER in (text or "") else (text or "")
-    return f"{text.rstrip()}\n\n{block}" if text.strip() else block
+    """Our block in the rider's text: replaced where it already is, otherwise appended after one blank line.
+    The block takes the description's line endings."""
+    text = text or ""
+    eol = _eol(text)
+    block = block.replace("\n", eol)
+    span = _block_span(text)
+    if span:
+        return text[:span[0]] + block + text[span[1]:]
+    return text.rstrip() + eol * 2 + block if text.strip() else block
 
 
 def main():
