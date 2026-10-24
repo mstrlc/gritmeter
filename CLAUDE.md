@@ -51,7 +51,9 @@ No test suite yet. Validate classifier/snapping changes by re-running `ride_rati
   paper/ink neutrals; one accent, rough red `#c42e2a` (dark `#ee5a4e`); square corners; light + dark + auto themes.
 - Copy is lowercase except proper nouns (Strava, OpenStreetMap, GPS, place names); in running text write
   gritmeter as the small mark + bold wordmark.
-- Description block format is fixed in `PLAN.md` (first line `surface by gritmeter.app` is the marker).
+- Description block format is fixed in `PLAN.md`: `surface: ...`, `roughness N / 100, label`, then the sign-off
+  `-- From gritmeter.app · map data © OpenStreetMap contributors`; `ride_rating.BLOCK_PATTERNS` finds it (and the older
+  4-line block).
 - Strava tokens/secrets: environment variables or an untracked file only; never commit or log them (server.py silences
   request logging because query strings carry OAuth codes). `.env` keys: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET,
   STRAVA_VERIFY_TOKEN, SESSION_SECRET; server also reads HOST, PORT, PUBLIC_URL.

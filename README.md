@@ -5,11 +5,9 @@ adds a short surface breakdown to the activity description:
 
 ```
 cold start, bakery stop at 40 km.
-
-surface by gritmeter.app
-73% asphalt · 11% hardpack · 7% rough · 6% gravel
+surface: 73% asphalt · 11% hardpack · 7% rough · 6% gravel
 roughness 16 / 100, mixed
-map data © OpenStreetMap contributors
+-- From gritmeter.app · map data © OpenStreetMap contributors
 ```
 
 Your own text stays as you wrote it. gritmeter only adds its block below, and replaces just that block if a ride is

@@ -19,32 +19,33 @@ A web backend + frontend for browsing rides comes later, on top of the same back
 Strava webhook (activity created) -> POST /webhook (200 in <2 s, enqueue only)
   -> worker: refresh token -> GET streams -> analyse(points) -> store result -> PUT description
 ```
-- Append, never overwrite: add our block after the rider's text; its first line `surface by gritmeter.app` is the marker,
-  and re-runs replace only that block, where it stands.
+- Append, never overwrite: add our block after the rider's text; it is recognised by its `surface: ...` and
+  `roughness N / 100` lines and its `-- From gritmeter.app` sign-off (the older 4-line block too), and re-runs replace
+  only that block, where it stands.
 - Other description apps (KlimatApp, Wandrer, ...) write the same field and Strava has no conditional update, so the
   last write wins (decided 2026-10-25): new uploads wait 3 min so they write first; the description is re-read right
   before our PUT; one follow-up check 15 min later restores our block if another app replaced the whole description
   (only while the ride's status is still "done", so a rider's removal via my.gritmeter.app sticks; a manual delete on
   Strava within those 15 min is undone once). Our block takes the description's line endings (others write `\r\n`)
-  and sits one blank line from the text around it.
+  and, like theirs, follows the previous text on the next line.
 - Dedupe on `(athlete_id, activity_id)`; Strava retries webhooks.
 - Skip activities without `latlng` (indoor / virtual).
 - Per-athlete tokens (6 h access). *Currently plain text* in `data/gritmeter.db` (mode 600); encrypting the refresh token
   needs a non-stdlib library (`cryptography`) and a key on the same Pi, so it is deferred.
-- Catch-up job: list recent activities, process any without our marker (covers downtime; Strava drops events after a few retries).
+- Catch-up job: list recent activities, process any not yet seen (covers downtime; Strava drops events after a few retries).
 - Rate limits are per *app*: this app has 200 req/15 min, 2000/day (seen 2026-10-24); ~5 calls per written ride (activity,
   streams, re-read, PUT, follow-up check) => ~400 rides/day total until raised. The worker pauses at 90% of either window.
 - Writing for others needs Strava approval beyond single-athlete mode — apply early (longest wait). Re-check current API terms
   (2024 agreement restricts showing one user's data to others and use for AI/ML).
 - Attribution: "© OpenStreetMap contributors" in the description; "Powered by Strava" in any UI.
-- Description format (decided 2026-10-24), plain text, lowercase except proper nouns:
+- Description format (decided 2026-10-25, replacing the 4-line block with a header from 2026-10-24), plain text,
+  lowercase except proper nouns, in the style of KlimatApp/Wandrer (no blank line, sign-off last):
   ```
-  surface by gritmeter.app
-  73% asphalt · 11% hardpack · 7% rough · 6% gravel
+  surface: 73% asphalt · 11% hardpack · 7% rough · 6% gravel
   roughness 16 / 100, mixed
-  map data © OpenStreetMap contributors
+  -- From gritmeter.app · map data © OpenStreetMap contributors
   ```
-  Line 2 lists surfaces largest first, leaving out shares under 5% (`ride_rating.MIN_PCT`); paved_rough reads
+  Line 1 lists surfaces largest first, leaving out shares under 5% (`ride_rating.MIN_PCT`); paved_rough reads
   "rough pavement". Score rounded to
   a whole number, then the `ride_rating.label`.
 
