@@ -202,6 +202,9 @@ class Handler(BaseHTTPRequestHandler):
             if not athlete:
                 return self.redirect("/")
             return self.page(web.settings_page(athlete, csrf_token(self.cookie()), n))
+        m = re.fullmatch(r"/activity/(\d+)", url.path)
+        if m and athlete and (job := store.get_job(athlete["id"], int(m[1]))):
+            return self.page(web.ride(job, csrf_token(self.cookie())))  # one ride card, polled by the rides page
         self.reply(404, "not found")
 
     def login(self):
@@ -259,7 +262,9 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/activity/(\d+)/(add|remove|retry)", path)
         if m and store.request_action(aid, int(m[1]), ACTIONS[m[2]]):
             wake.set()
-            return self.redirect(f"/#ride-{m[1]}")  # back to the ride, whose status shows the request
+            if self.headers.get("X-Fetch"):  # the rides page swaps in the updated card itself
+                return self.page(web.ride(store.get_job(aid, int(m[1])), csrf_token(self.cookie())))
+            return self.redirect(f"/#ride-{m[1]}")  # without JS: back to the ride, whose status shows the request
         self.reply(404, "not found")
 
     def webhook(self):

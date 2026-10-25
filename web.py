@@ -137,7 +137,6 @@ h2 { font-weight: 900; letter-spacing: -.04em; line-height: 1.05; font-size: 1.5
 .rides { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .ride { scroll-margin-top: 140px; padding: 12px 16px 10px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow);
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 16px; }
-.ride:target { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
 .ride .meta { font-size: .8125rem; }
 .ride h3 { font-weight: 800; letter-spacing: -.02em; font-size: 1.05rem; line-height: 1.2; margin-top: 0; }
 .ride .score { align-self: start; display: flex; align-items: center; gap: 10px; }
@@ -151,7 +150,7 @@ h2 { font-weight: 900; letter-spacing: -.04em; line-height: 1.05; font-size: 1.5
   margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--rule); }
 .status { font-size: .9375rem; color: var(--ink-2); }
 .status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-2); margin-right: 8px; vertical-align: 1px; opacity: .6; }
-.status .dot.on { background: var(--accent); opacity: 1; }
+.status .ico { width: 15px; height: 15px; margin-right: 5px; vertical-align: -2px; color: var(--accent); stroke-width: 2.4; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .strava-link { display: inline-flex; align-items: center; gap: 5px; font-size: .875rem; font-weight: 700; text-underline-offset: 3px; }
 .strava-link .ico { width: 14px; height: 14px; }
@@ -326,7 +325,7 @@ def _state_live(job, csrf):
         what = {"write": "adding the summary", "remove": "removing the summary"}.get(job["action"], "in the queue")
         return f"{dot}{what}…", ""
     if s == "done":
-        return ('<span class="dot on"></span>in the description',
+        return (f'{icon("check")}in the description',
                 _action(aid, "remove", "minus", "remove", csrf))
     if s == "rated":
         why = {"auto-add off": ": auto-add is off", "private ride": ": private ride", "commute": ": commute",
@@ -366,7 +365,8 @@ def _month(start_date):
     return f"{MONTHS[d.month - 1]} {d.year}"
 
 
-def _ride(job, csrf):
+def ride(job, csrf):
+    """One ride's card; also sent alone when a button on it is used in place (see RIDE_JS)."""
     aid, r = job["activity_id"], job["result"]
     name = escape(job["name"] or f"activity {aid}")
     meta = " · ".join(x for x in (_day(job["start_date"]), f'{r["km"]} km' if r else "") if x)
@@ -375,7 +375,8 @@ def _ride(job, csrf):
     status, button = _state(job, csrf)
     kind = {"road": "road", "mostly road": "road", "mixed": "mixed"}.get(r["label"], "gravel") if r else ""
     added = "added" if job["status"] == "done" else "not-added"
-    return (f'<li class="ride" id="ride-{aid}" data-kind="{kind}" data-added="{added}" data-type="{escape(job.get("sport_type") or "")}" data-date="{(job["start_date"] or "")[:10]}"><div><p class="meta mono muted tnum">{meta}</p><h3>{name}</h3></div>{score}'
+    queued = " data-queued" if job["status"] == "queued" else ""
+    return (f'<li class="ride" id="ride-{aid}"{queued} data-kind="{kind}" data-added="{added}" data-type="{escape(job.get("sport_type") or "")}" data-date="{(job["start_date"] or "")[:10]}"><div><p class="meta mono muted tnum">{meta}</p><h3>{name}</h3></div>{score}'
             f'{_mix(r["pct"]) if r else ""}'
             f'<div class="foot"><p class="status">{status}</p><div class="actions">{button}{_strava_link(aid)}</div></div></li>')
 
@@ -395,7 +396,7 @@ def _months(jobs, csrf):
     for j in jobs:
         groups.setdefault(_month(j["start_date"]), []).append(j)
     return "".join(f'<section class="month-group"><h2 class="month">{month}</h2><ul class="rides">'
-                   + "".join(_ride(j, csrf) for j in js) + "</ul></section>" for month, js in groups.items())
+                   + "".join(ride(j, csrf) for j in js) + "</ul></section>" for month, js in groups.items())
 
 
 def _skipped(jobs):
@@ -452,6 +453,30 @@ FILTER_JS = """<script>
 </script>"""
 
 
+RIDE_JS = """<script>
+(function () {
+  // ride buttons post in the background and swap the card in place; while queued, re-fetch it until it settles
+  function swap(li, html) {
+    var t = document.createElement("template"); t.innerHTML = html.trim();
+    var n = t.content.firstElementChild;
+    li.innerHTML = n.innerHTML; li.dataset.added = n.dataset.added;
+    if (n.hasAttribute("data-queued")) setTimeout(function () { load(li, fetch("/activity/" + li.id.slice(5), { headers: { "X-Fetch": "1" } })); }, 2000);
+  }
+  function load(li, req) {
+    req.then(function (r) { if (!r.ok || r.redirected) throw r; return r.text(); })
+       .then(function (html) { swap(li, html); })
+       .catch(function () { location.reload(); });
+  }
+  document.addEventListener("submit", function (e) {
+    var f = e.target, li = f.closest(".ride"); if (!li) return;
+    e.preventDefault();
+    f.querySelector("button").disabled = true;
+    load(li, fetch(f.action, { method: "POST", body: new URLSearchParams(new FormData(f)), headers: { "X-Fetch": "1" } }));
+  });
+})();
+</script>"""
+
+
 def activities_page(athlete, jobs, csrf, code=""):
     rides = [j for j in jobs if j["status"] != "skipped"]
     skipped = [j for j in jobs if j["status"] == "skipped"]
@@ -502,7 +527,7 @@ def activities_page(athlete, jobs, csrf, code=""):
                if any(j["status"] == "queued" for j in jobs) else "")
     body = (f"{refresh}<h1>your rides</h1>{summary}{notice(code)}{warn}{stats}{filters}"
             f"{listing}{_skipped(skipped)}{backfill}")
-    return shell("rides", body + (FILTER_JS if filters else ""), athlete, csrf, current="/")
+    return shell("rides", body + (FILTER_JS if filters else "") + RIDE_JS, athlete, csrf, current="/")
 
 
 # ---------------------------------------------------------------- settings

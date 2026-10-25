@@ -159,6 +159,12 @@ def list_jobs(athlete_id, limit=100):
     return [dict(r) | {"result": json.loads(r["result"]) if r["result"] else None} for r in rows]
 
 
+def get_job(athlete_id, activity_id):
+    """One of the athlete's activities with result decoded, or None."""
+    r = db().execute("SELECT * FROM jobs WHERE activity_id = ? AND athlete_id = ?", (activity_id, athlete_id)).fetchone()
+    return dict(r) | {"result": json.loads(r["result"]) if r["result"] else None} if r else None
+
+
 def delete_job(activity_id):
     """Drop what we know about an activity the rider deleted."""
     db().execute("DELETE FROM jobs WHERE activity_id = ?", (activity_id,))
