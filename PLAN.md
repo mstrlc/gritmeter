@@ -32,10 +32,12 @@ Strava webhook (activity created) -> POST /webhook (200 in <2 s, enqueue only)
 - Skip activities without `latlng` (indoor / virtual).
 - Per-athlete tokens (6 h access). *Currently plain text* in `data/gritmeter.db` (mode 600); encrypting the refresh token
   needs a non-stdlib library (`cryptography`) and a key on the same Pi, so it is deferred.
-- Catch-up job: list recent activities, process any not yet seen (covers downtime; Strava drops events after a few retries).
-- Rate limits are per *app*: this app has 200 req/15 min, 2000/day (seen 2026-10-24); ~5 calls per written ride (activity,
-  streams, re-read, PUT, follow-up check) => ~400 rides/day total until raised. The worker pauses at 90% of either window.
-- Writing for others needs Strava approval beyond single-athlete mode — apply early (longest wait). Re-check current API terms
+- Catch-up job: after an outage (found by the heartbeat), list each rider's recent activities and process any not yet
+  seen (Strava drops events after a few retries). One call per rider per outage.
+- Rate limits are per *app* (seen 2026-10-25): overall 400 req/15 min, 4,000/day; reads 200/15 min, 2,000/day; up to
+  10 athletes may connect. A written ride is ~4 reads (activity, streams, re-read, follow-up check) + 1 write, so the
+  read limit binds: ~500 rides/day total. The worker pauses at 90% of the tighter window.
+- Writing for more than 10 athletes needs Strava's review — apply early (longest wait). Re-check current API terms
   (2024 agreement restricts showing one user's data to others and use for AI/ML).
 - Attribution: "© OpenStreetMap contributors" in the description; "Powered by Strava" in any UI.
 - Description format (decided 2026-10-25, replacing the 4-line block with a header from 2026-10-24), plain text,
