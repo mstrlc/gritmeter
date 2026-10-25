@@ -36,6 +36,10 @@ CREATE TABLE IF NOT EXISTS jobs (
     updated REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS jobs_due ON jobs (status, next_try);
+CREATE TABLE IF NOT EXISTS state (     -- small server bookkeeping: reachability, catch-up progress
+    key TEXT PRIMARY KEY,
+    value REAL NOT NULL
+);
 """
 
 # columns added after the first schema: (table, column, definition)
@@ -107,7 +111,7 @@ def get_athlete(athlete_id=None):
 
 
 def athlete_ids():
-    return [r[0] for r in db().execute("SELECT id FROM athletes")]
+    return [r[0] for r in db().execute("SELECT id FROM athletes ORDER BY id")]
 
 
 def save_settings(athlete_id, **values):
@@ -131,6 +135,23 @@ def delete_athlete(athlete_id):
     """Forget an athlete completely: tokens, settings and every activity record."""
     db().execute("DELETE FROM athletes WHERE id = ?", (athlete_id,))
     db().execute("DELETE FROM jobs WHERE athlete_id = ?", (athlete_id,))
+
+
+# ---------------------------------------------------------------- server state
+
+def get_state(key):
+    """A stored number, or None."""
+    row = db().execute("SELECT value FROM state WHERE key = ?", (key,)).fetchone()
+    return row[0] if row else None
+
+
+def set_state(key, value):
+    """Store a number; None deletes the key."""
+    if value is None:
+        db().execute("DELETE FROM state WHERE key = ?", (key,))
+    else:
+        db().execute("INSERT INTO state (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+                     (key, value))
 
 
 # ---------------------------------------------------------------- jobs

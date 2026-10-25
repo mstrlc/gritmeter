@@ -63,7 +63,7 @@ Strava webhook (activity created) -> POST /webhook (200 in <2 s, enqueue only)
   network. `deploy.sh` rsyncs the code and rebuilds on the Pi (no registry); `data/` and `.env` stay on the Pi.
   The container runs as uid 1000 (the Pi's login user, who owns `data/`). Starts in `--dry-run` until `.env` sets
   `SERVER_FLAGS=` (empty). Cheaper than a VPS (~€50/yr) since the Pi runs anyway; outages only delay descriptions
-  (webhook retries + 3-day catch-up), and moving later is copying one folder.
+  (webhook retries + a catch-up pass after each outage the heartbeat sees, one Strava call per rider), and moving later is copying one folder.
 - Tunnel (2026-10-25): locally managed tunnel `gritmeter`, made with the `cloudflared` CLI on the Mac (`tunnel create`,
   `tunnel route dns gritmeter my.gritmeter.app`); ingress lives in `cloudflared.yml` in the repo, and the Pi's `.env`
   holds only the run token (`cloudflared tunnel token gritmeter`). The account cert (`~/.cloudflared/cert.pem`) stays

@@ -14,7 +14,7 @@ GPS points -> resample every 20 m -> fetch nearby OSM ways (cached tiles) -> sna
 | `ride_rating.py` | 6-level classifier (`classify_fine`), 0–100 roughness `score`, text `label`. Levels: asphalt, paved_rough, hardpack, gravel, dirt, rough (+ unknown). `rate(points)` is the one-call entry point; `description_block` / `merge_description` build and splice the Strava description block. |
 | `strava.py` | Strava client: OAuth, token refresh, streams fetch, `process(activity)` (rate + description writer), rate-limit tracking, webhook subscription commands. |
 | `store.py` | SQLite (WAL) store, `data/gritmeter.db`: `athletes` (tokens) and `jobs` (queue, dedupe on activity id, results). Keep storage access behind its functions. |
-| `server.py` | Backend for my.gritmeter.app: routes, signed-cookie sessions + CSRF, webhook (`/webhook`), worker thread draining the queue, catch-up pass every 6 h. |
+| `server.py` | Backend for my.gritmeter.app: routes, signed-cookie sessions + CSRF, webhook (`/webhook`), worker thread draining the queue, `maps` thread for new areas, `heartbeat` thread; catch-up pass only after an outage. |
 | `web.py` | Server-rendered HTML (stdlib) for my.gritmeter.app: sign-in, rides list, settings. Styles copy `design/identity.html` tokens. |
 | `site/index.html` | Landing page (plain HTML/CSS, no build step) + `site/favicon.svg`. |
 | `wrangler.jsonc`, `src/worker.js` | Cloudflare Workers config for gritmeter.app: serves `site/`, redirects www to the apex. |
@@ -82,7 +82,7 @@ Two targets, deployed separately; the `/deploy` skill (`.claude/skills/deploy/`)
   request logging because query strings carry OAuth codes). `.env` keys: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET,
   STRAVA_VERIFY_TOKEN, SESSION_SECRET; server also reads HOST, PORT, PUBLIC_URL.
 - Starting server.py without `--dry-run` writes to real descriptions of rides uploaded after the athlete connected
-  (catch-up covers the last 3 days). Rides rated in dry-run (status `dryrun`) are never written
+  (after an outage, catch-up lists each rider's rides from 3 days before it began). Rides rated in dry-run (status `dryrun`) are never written
   unless the rider clicks add once the server is live; in dry-run the rides page shows no per-ride buttons.
 - Strava ids differ from Garmin ids: ride `24641046424` in `data/rides.json` is Strava `20490259741`.
 - Runs on a Raspberry Pi 4 (`pi4.local`) in Docker (`Dockerfile`, `compose.yaml`, `deploy.sh`): keep runtime memory

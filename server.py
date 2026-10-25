@@ -2,7 +2,8 @@
 """gritmeter backend for my.gritmeter.app: Strava webhook, sign-in, the rider's pages, and a worker that rates rides.
 
 One process: a threaded HTTP server (answers webhooks in well under Strava's 2 s by only queueing) and one worker
-thread that drains the SQLite job queue and runs a catch-up pass every few hours for events Strava dropped.
+thread that drains the SQLite job queue. Strava only drops events while we are unreachable, so a heartbeat thread
+checks the public URL and the worker runs a catch-up pass after each outage (one call per rider), never on a timer.
 Every Strava call for a ride goes through the worker, so rate limits are handled in one place.
 
 Routes:
@@ -32,6 +33,7 @@ import threading
 import time
 import traceback
 import urllib.parse
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import store
@@ -40,8 +42,8 @@ import web
 
 HOST = os.environ.get("HOST", "127.0.0.1")  # cloudflared runs on the same machine
 PORT = int(os.environ.get("PORT", 8722))
-CATCHUP_EVERY = 6 * 3600   # seconds between catch-up passes
-CATCHUP_DAYS = 3           # how far back a catch-up pass looks (never before the athlete connected)
+PROBE_EVERY = 120          # seconds between heartbeat checks of PUBLIC_URL/health
+CATCHUP_DAYS = 3           # catch-up looks this far back before an outage began (late uploads of earlier rides)
 BACKFILL_DAYS = 14         # "rate my last 14 days" on the rides page
 MAX_ATTEMPTS = 6           # then the job is marked failed
 NEW_DELAY = 180            # wait after an upload so other description apps (weather, Wandrer...) write first
@@ -296,13 +298,43 @@ def handle_event(e):
 
 # ---------------------------------------------------------------- worker
 
-def catch_up():
-    """Queue recent activities we haven't seen (Strava drops events after a few retries).
-    Only rides uploaded since the athlete connected: older ones are left to the rider (backfill)."""
+def heartbeat():
+    """Check every PROBE_EVERY s that Strava can reach us (through the tunnel). Records "alive_at", and "outage_since"
+    when a check fails; a restart after a gap counts as an outage too. The worker catches up once we're back."""
+    alive = store.get_state("alive_at")
+    if alive and time.time() - alive > 2 * PROBE_EVERY and store.get_state("outage_since") is None:
+        store.set_state("outage_since", alive)
+        log(f"down since {time.strftime('%Y-%m-%d %H:%M', time.localtime(alive))}, will catch up")
+    while True:
+        try:
+            urllib.request.urlopen(public_url() + "/health", timeout=15).read()
+            store.set_state("alive_at", time.time())
+        except Exception as e:
+            if store.get_state("outage_since") is None:
+                store.set_state("outage_since", store.get_state("alive_at") or time.time())
+                log(f"unreachable at {public_url()} ({e}), will catch up once back")
+        time.sleep(PROBE_EVERY)
+
+
+def catch_up_due():
+    """Start of the outage to catch up on, once we're reachable again; else None."""
+    since, alive = store.get_state("outage_since"), store.get_state("alive_at")
+    return since if since is not None and alive is not None and alive > since + PROBE_EVERY else None
+
+
+def catch_up(since):
+    """Queue activities Strava couldn't deliver while we were unreachable: one call per rider, per outage.
+    Only rides uploaded since the athlete connected: older ones are left to the rider (backfill).
+    Resumable: a rate-limit pause continues after the last rider done ("catchup_done")."""
+    done = store.get_state("catchup_done") or 0
     for aid in store.athlete_ids():
+        if aid <= done:
+            continue
+        if strava.wait_for_rate_limit():  # the worker pauses, then resumes after `done`
+            raise strava.RateLimited("near the limit during catch-up")
         try:
             a = store.get_athlete(aid)
-            after = max(time.time() - CATCHUP_DAYS * 86400, a["connected_at"] or 0)
+            after = max(since - CATCHUP_DAYS * 86400, a["connected_at"] or 0)
             new = [i for i in strava.recent_activity_ids(strava.access_token(aid), after)
                    if store.enqueue(aid, i, delay=NEW_DELAY)]
             if new:
@@ -311,6 +343,11 @@ def catch_up():
             raise
         except Exception as e:
             log(f"catch-up failed for athlete {aid}: {e}")
+        store.set_state("catchup_done", aid)
+    store.set_state("catchup_done", None)
+    if store.get_state("outage_since") == since:  # unless a new outage began meanwhile
+        store.set_state("outage_since", None)
+    log("catch-up done")
 
 
 def run_job(job, write):
@@ -384,7 +421,6 @@ def run_verify(job):
 
 
 def worker(write):
-    next_catchup = 0
     while True:
         try:
             pause = strava.wait_for_rate_limit()
@@ -392,9 +428,8 @@ def worker(write):
                 log(f"rate limit near {strava.usage}, pausing {pause / 60:.0f} min")
                 time.sleep(pause)
                 strava.usage.clear()
-            if time.time() >= next_catchup:
-                catch_up()
-                next_catchup = time.time() + CATCHUP_EVERY
+            if (since := catch_up_due()) is not None:
+                catch_up(since)
             job = store.next_job()
             check = store.next_verify() if write and not job else None
             if job:
@@ -421,6 +456,7 @@ def main():
         log(f"requeued {n} rides waiting for map data")
     threading.Thread(target=worker, args=(write,), daemon=True, name="worker").start()
     threading.Thread(target=map_fetcher, daemon=True, name="maps").start()
+    threading.Thread(target=heartbeat, daemon=True, name="heartbeat").start()
     log(f"listening on {HOST}:{PORT}, public URL {public_url()}{'' if write else ', DRY RUN (no descriptions written)'}")
     httpd.serve_forever()
 
