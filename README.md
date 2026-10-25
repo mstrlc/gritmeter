@@ -56,6 +56,7 @@ Analysis pipeline (plain Python scripts; see `AGENTS.md` for commands and `PLAN.
 - `surface_mix.py`: OSM tile fetch/cache, snapping the track to OSM ways.
 - `ride_rating.py`: the six grades, the roughness score and the description block.
 - `strava.py`: Strava OAuth, GPS streams and the description writer.
+- `make_map.py` + `map_template.html`: a Leaflet map of one ride, coloured by grade.
 - `extract_osm.py`: builds the OSM tile cache from Geofabrik extracts.
 
 Website:

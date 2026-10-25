@@ -7,14 +7,9 @@ Every page credits OpenStreetMap and says Powered by Strava.
 import datetime
 from html import escape
 
+import make_map
 import ride_rating as rr
 import store
-
-# grade labels shown next to the surface mix bar
-GRADES = {
-    "asphalt": "G0", "paved_rough": "G1", "hardpack": "G2", "gravel": "G3",
-    "dirt": "G4", "rough": "G5", "unknown": "G?",
-}
 
 # Strava sport_type -> how the settings and rides pages name it (lowercase copy, plural)
 RIDE_TYPE_NAMES = {"GravelRide": "gravel rides", "MountainBikeRide": "mountain bike rides", "Ride": "road and other rides",
@@ -293,7 +288,7 @@ def _n(count, word):
 def _mix(pct):
     """Proportional bar plus the same numbers in text (colour is never the only carrier)."""
     parts = [(k, p) for k, p in pct.items() if p > 0]
-    bar = "".join(f'<i style="flex:{p};background:var(--{GRADES[k].replace("?", "u").lower()})" title="{GRADES[k]} '
+    bar = "".join(f'<i style="flex:{p};background:var(--{make_map.GRADES[k].replace("?", "u").lower()})" title="{make_map.GRADES[k]} '
                   f'{rr.DESC_NAMES.get(k, k)} {p:.0f}%"></i>' for k, p in parts)
     text = " · ".join(f"{int(p + .5)}% {rr.DESC_NAMES.get(k, k)}" for k, p in sorted(parts, key=lambda kp: -kp[1])
                       if p >= 1)

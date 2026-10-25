@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@100..900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  /* gritmeter identity (design/identity.html): survey paper, ink, one rough-red accent; Epilogue + DM Mono */
+  :root { --paper:#eef0ea; --paper-2:#e3e6dd; --ink:#13161a; --ink-2:#555c63; --rule:#c6cbc0; --accent:#c42e2a;
+    --display:"Epilogue", "Helvetica Neue", Arial, sans-serif; --mono:"DM Mono", ui-monospace, Menlo, monospace; }
+  @media (prefers-color-scheme: dark) { :root { --paper:#0f1214; --paper-2:#171b1e; --ink:#e7e9e2; --ink-2:#99a09a;
+    --rule:#2b3034; --accent:#ee5a4e; color-scheme: dark; } }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:var(--paper); color:var(--ink); font: 400 14px/1.45 var(--display);
+    -webkit-font-smoothing: antialiased; }
+  .mono { font-family:var(--mono); font-weight:300; font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
+  .muted { color:var(--ink-2); }
+  .tnum { font-variant-numeric: tabular-nums; }
+  #wrap { display:flex; height:100%; }
+  #side { width:350px; flex:none; overflow:auto; background:var(--paper); border-right:1px solid var(--ink);
+    display:flex; flex-direction:column; }
+  #map { flex:1; background:var(--paper-2); }
+  .blk { padding:16px 18px; border-bottom:1px solid var(--rule); display:grid; gap:12px; }
+  .brand { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--ink); padding-block:12px; }
+  .brand a { display:flex; align-items:center; gap:8px; color:inherit; text-decoration:none; font-weight:900; letter-spacing:-.06em; font-size:18px; }
+  .brand svg { color:var(--ink); }
+  h1 { font-weight:800; letter-spacing:-.03em; font-size:24px; line-height:1.05; margin:0; text-wrap:balance; }
+  .score { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .score b { font-weight:900; font-size:64px; letter-spacing:-.05em; line-height:.85; }
+  .badge { font-family:var(--mono); font-weight:500; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    padding:4px 8px 3px; background:var(--ink); color:var(--paper); }
+  /* roughness scale drawn like a map scale bar, one block per rating band */
+  .scalebar .blocks { position:relative; display:flex; height:9px; border:1px solid var(--ink); }
+  .scalebar .blocks i { border-right:1px solid var(--ink); }
+  .scalebar .blocks i:nth-child(odd) { background:var(--ink); }
+  .scalebar .blocks i:last-of-type { border-right:0; }
+  .scalebar .pin { position:absolute; top:-8px; width:2px; height:23px; background:var(--accent); transform:translateX(-1px); }
+  .scalebar .lbls { display:flex; justify-content:space-between; margin-top:5px; }
+  .bar { display:flex; gap:2px; height:12px; }
+  .bar div { height:100%; min-width:2px; }
+  .legend { list-style:none; padding:0; margin:0; }
+  .legend li { display:grid; grid-template-columns:24px 48px 1fr auto; gap:10px; align-items:center; padding:7px 4px;
+    border-bottom:1px solid var(--rule); cursor:pointer; user-select:none; }
+  .legend li:last-child { border-bottom:0; }
+  .legend li:hover { background:var(--paper-2); }
+  .legend li.off { opacity:.35; }
+  .legend .g { font-family:var(--mono); font-weight:500; font-size:11px; }
+  .legend .n { font-weight:600; }
+  .legend .pct { font-family:var(--mono); font-size:12px; }
+  .ln { display:block; background:var(--paper-2); }
+  .seg { display:grid; grid-template-columns:44px 52px 1fr; gap:8px; padding:7px 4px; cursor:pointer; align-items:baseline;
+    border-bottom:1px solid var(--rule); }
+  .seg:hover { background:var(--paper-2); }
+  .seg .k, .seg .l { font-family:var(--mono); font-size:11px; color:var(--ink-2); }
+  .seg .w { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .seg .w b { font-family:var(--mono); font-weight:500; font-size:11px; margin-right:6px; }
+  .hint { margin-top:auto; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .leaflet-container { font-family:var(--display); }
+  .leaflet-popup-content { font: 13px/1.4 var(--display); }
+  .leaflet-popup-content small { font-family:var(--mono); font-size:10px; letter-spacing:.06em; }
+  .leaflet-control-layers { font-family:var(--mono); font-size:11px; }
+  @media (max-width: 720px) {
+    #wrap { flex-direction:column-reverse; }
+    #side { width:100%; height:48%; border-right:0; border-top:1px solid var(--ink); }
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <aside id="side">
+    <div class="blk brand">
+      <a href="#" aria-label="gritmeter">
+        <svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true" fill="currentColor">
+          <rect x="4" y="6" width="56" height="12"/><rect x="4" y="26" width="24" height="12"/><rect x="36" y="26" width="24" height="12"/>
+          <circle cx="10" cy="52" r="6"/><circle cx="32" cy="52" r="6"/><circle cx="54" cy="52" r="6"/>
+        </svg>gritmeter</a>
+      <span class="mono muted">Surface map</span>
+    </div>
+    <div class="blk">
+      <div class="mono muted tnum" id="meta"></div>
+      <h1 id="name"></h1>
+      <div class="score"><b class="tnum" id="score"></b><span class="badge" id="label"></span><span class="mono muted">/ 100 roughness</span></div>
+      <div class="scalebar">
+        <div class="blocks" id="blocks"></div>
+        <div class="lbls mono muted tnum"><span>0</span><span>10</span><span>20</span><span>30</span><span>40+</span></div>
+      </div>
+    </div>
+    <div class="blk">
+      <div class="bar" id="bar"></div>
+      <ul class="legend" id="legend"></ul>
+    </div>
+    <div class="blk">
+      <div class="mono muted">Off-asphalt sections</div>
+      <div id="segs"></div>
+    </div>
+    <div class="blk hint mono muted">Click a surface to hide or show it, and a section to zoom to it.</div>
+  </aside>
+  <div id="map"></div>
+</div>
+<script>
+const D = __DATA__, C = __COLORS__, N = __NAMES__, DASH = __DASH__, GR = __GRADES__;
+const order = Object.keys(C);
+const PAPER = '#eef0ea', INK = '#13161a';
+document.getElementById('name').textContent = D.name;
+document.getElementById('meta').textContent = `${D.date} · ${D.km} km`;
+document.getElementById('score').textContent = D.score;
+document.getElementById('label').textContent = D.label;
+
+// scale bar: bands from ride_rating.label, pin at the score (capped at 40)
+const blocks = document.getElementById('blocks');
+[[0, 5], [5, 10], [10, 20], [20, 30], [30, 40]].forEach(([a, b]) => {
+  const i = document.createElement('i'); i.style.width = (b - a) / 40 * 100 + '%'; blocks.appendChild(i);
+});
+const pin = document.createElement('span'); pin.className = 'pin'; pin.style.left = Math.min(D.score, 40) / 40 * 100 + '%';
+blocks.appendChild(pin);
+
+// a line swatch in the grade's colour and dash pattern
+const swatch = (c, w = 48) => `<svg class="ln" width="${w}" height="12" viewBox="0 0 ${w} 12" aria-hidden="true">`
+  + `<line x1="0" y1="6" x2="${w}" y2="6" stroke="${C[c]}" stroke-width="5" stroke-dasharray="${DASH[c]}"`
+  + ` stroke-linecap="${c === 'rough' ? 'round' : 'butt'}"/></svg>`;
+
+const map = L.map('map', { zoomControl: true });
+// openstreetmap.org tiles reject requests without a Referer (e.g. opened from file://) and CARTO
+// now needs an API key, so use keyless providers. OpenTopoMap draws forest tracks, handy for gravel.
+const osmAttr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+const esri = (svc, label) => L.tileLayer(`https://server.arcgisonline.com/ArcGIS/rest/services/${svc}/MapServer/tile/{z}/{y}/{x}`,
+  { maxZoom: 19, attribution: `${label} &copy; Esri` });
+const lightGray = L.layerGroup([
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 19, maxNativeZoom: 16, attribution: 'Base &copy; Esri, HERE, Garmin, ' + osmAttr }),
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 19, maxNativeZoom: 16 }),
+]);
+const bases = {
+  'Light': lightGray,
+  'Topo (tracks)': L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    { maxZoom: 17, attribution: osmAttr + ', SRTM | &copy; <a href="https://opentopomap.org">OpenTopoMap</a>' }),
+  'Streets': esri('World_Street_Map', 'Map'),
+  'Satellite': esri('World_Imagery', 'Imagery'),
+};
+bases['Light'].addTo(map);
+L.control.layers(bases, null, { position: 'topright' }).addTo(map);
+
+// lines sit on a paper-coloured casing so dashes stay legible over any basemap
+const layers = {}; order.forEach(c => layers[c] = L.layerGroup().addTo(map));
+const all = [];
+D.segs.forEach(s => {
+  const casing = L.polyline(s.pts, { color: PAPER, weight: 9, opacity: .9 });
+  const line = L.polyline(s.pts, { color: C[s.cat], weight: 5, opacity: 1, dashArray: DASH[s.cat] || null,
+    lineCap: s.cat === 'rough' ? 'round' : 'butt' });
+  line.bindPopup(`<b>${GR[s.cat]} ${N[s.cat]}</b><br><small>KM ${s.km.toFixed(1)} · ${s.len} M</small><br><small>${s.way}</small>`);
+  layers[s.cat].addLayer(casing).addLayer(line);
+  s.line = line; all.push(...s.pts);
+});
+map.fitBounds(L.latLngBounds(all), { padding: [20, 20] });
+L.circleMarker(all[0], { radius: 7, color: INK, weight: 3, fillColor: PAPER, fillOpacity: 1 }).addTo(map).bindTooltip('Start');
+L.circleMarker(all[all.length - 1], { radius: 7, color: PAPER, weight: 2, fillColor: INK, fillOpacity: 1 }).addTo(map).bindTooltip('Finish');
+
+const bar = document.getElementById('bar'), legend = document.getElementById('legend');
+order.forEach(c => {
+  if (!D.pct[c]) return;
+  const b = document.createElement('div'); b.style.flex = D.pct[c]; b.style.background = C[c]; b.title = `${N[c]} ${D.pct[c]}%`; bar.appendChild(b);
+  const li = document.createElement('li'); li.tabIndex = 0;
+  li.innerHTML = `<span class="g">${GR[c]}</span>${swatch(c)}<span class="n">${N[c]}</span><span class="pct tnum">${D.pct[c].toFixed(1)}%</span>`;
+  li.onclick = li.onkeydown = e => {
+    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    const on = map.hasLayer(layers[c]); on ? map.removeLayer(layers[c]) : map.addLayer(layers[c]); li.classList.toggle('off', on);
+  };
+  legend.appendChild(li);
+});
+
+// clicking a section zooms to it and marks it with the accent red
+const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+let halo = null;
+const list = document.getElementById('segs');
+D.segs.filter(s => s.cat !== 'asphalt' && s.len >= 150).forEach(s => {
+  const el = document.createElement('div'); el.className = 'seg'; el.tabIndex = 0;
+  el.innerHTML = `<span class="k tnum">${s.km.toFixed(1)}</span><span class="l tnum">${s.len} m</span>`
+    + `<span class="w" title="${s.way}"><b style="color:${C[s.cat]}">${GR[s.cat]}</b>${N[s.cat]} · ${s.way}</span>`;
+  el.onclick = el.onkeydown = e => {
+    if (e.type === 'keydown' && e.key !== 'Enter') return;
+    if (halo) map.removeLayer(halo);
+    halo = L.polyline(s.pts, { color: accent, weight: 16, opacity: .3, interactive: false }).addTo(map).bringToBack();
+    map.fitBounds(s.line.getBounds(), { padding: [60, 60], maxZoom: 17 }); s.line.openPopup();
+  };
+  list.appendChild(el);
+});
+</script>
+</body>
+</html>

@@ -16,6 +16,8 @@ GPS points -> resample every 20 m -> fetch nearby OSM ways (cached tiles) -> sna
 | `store.py` | SQLite (WAL) store, `data/gritmeter.db`: `athletes` (tokens) and `jobs` (queue, dedupe on activity id, results). Keep storage access behind its functions. |
 | `server.py` | Backend for my.gritmeter.app: routes, signed-cookie sessions + CSRF, webhook (`/webhook`), worker thread draining the queue, catch-up pass every 6 h. |
 | `web.py` | Server-rendered HTML (stdlib) for my.gritmeter.app: sign-in, rides list, settings. Styles copy `design/identity.html` tokens. |
+| `make_map.py` | `build(ride)` -> render-ready dict; `main` writes a Leaflet map to `maps/<id>.html` from `map_template.html`. |
+| `map_template.html` | Ride map page (Leaflet); surface colours, dash patterns and G0–G5 labels come from `COLORS` / `DASH` / `GRADES` in `make_map.py`. |
 | `site/index.html` | Landing page (plain HTML/CSS, no build step) + `site/favicon.svg`. |
 | `design/identity.html` | Visual identity sheet ("gritmeter"): tokens, type, logo, surface colours, components. Published as a claude.ai artifact. |
 | `extract_osm.py` | Fills `data/osm/` tiles from Geofabrik `.osm.pbf` extracts (needs pyosmium, in `.venv`). |
@@ -29,13 +31,14 @@ and are filtered out of reports.
 .venv/bin/python extract_osm.py data/pbf/*.osm.pbf   # build OSM tile cache from local extracts
 python3 surface_mix.py            # analyse all rides (--fetch: only download/cache OSM data)
 python3 ride_rating.py            # 6-level table + score per ride; writes data/ratings.json
+python3 make_map.py [ride_id]     # map for one ride (default: newest) -> maps/<id>.html
 python3 strava.py auth            # connect an athlete (needs STRAVA_CLIENT_ID/SECRET in env or .env)
 python3 strava.py rate <activity_id> [--write]   # rate from streams; --write updates the description
 python3 server.py [--dry-run]     # my.gritmeter.app on 127.0.0.1:8722; --dry-run rates but never writes descriptions
 python3 strava.py subscribe <url>/webhook        # register the webhook once the server is reachable publicly
 ```
 No test suite yet. Validate classifier/snapping changes by re-running `ride_rating.py` and comparing against
-`data/ratings.txt`.
+`data/ratings.txt`, and by eye on a map (`make_map.py`).
 
 ## Conventions and gotchas
 - Input to the analysis is just a list of `(lat, lon)` points. Strava data must come from the **streams API**

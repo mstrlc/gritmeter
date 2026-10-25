@@ -98,7 +98,7 @@ Uncovered tiles show as "unknown" until fetched; first ride in a new place is sl
    OAuth redirect under the `gritmeter.app` callback domain; the official Connect button (links straight to
    Strava's authorize URL, as the brand guidelines require) and Powered by Strava logo are in `site/strava/`; the
    landing page shows "coming soon" until the app is reachable; then link its buttons to my.gritmeter.app.
-5. Ride map page per activity (a Leaflet prototype lives on the `feat/ride-map` branch).
+5. Ride map page per activity, reusing `make_map.build`.
 
 ## Open questions
 - Personal-only vs. open to other riders (drives Strava approval and Phase 4).
