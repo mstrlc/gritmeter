@@ -104,11 +104,10 @@ Uncovered tiles show as "unknown" until fetched; first ride in a new place is sl
    *Status 2026-10-24:* `web.py` + routes written and tested locally in `--dry-run` (sign-in page, rides, settings save,
    sign-out, CSRF/forged-cookie/ownership checks, backfill of 18 activities, phone width, both themes). Disconnect not
    exercised against Strava (it would revoke the real authorization).
-   *Status 2026-10-25:* deployed on the Pi (Docker, see Hosting) in `--dry-run`, reachable at https://my.gritmeter.app
-   through the tunnel; Strava's authorize page accepts the `my.gritmeter.app/callback` redirect (sign-in itself not yet
-   tried there).
-   Next: sign in on the Pi, subscribe the webhook (`https://my.gritmeter.app/webhook` via `strava.py subscribe`), stop
-   local servers sharing the same tokens, then turn off dry-run (`SERVER_FLAGS=`); the official Connect button (links straight to
+   *Status 2026-10-25:* live on the Pi (Docker, see Hosting) at https://my.gritmeter.app through the tunnel, writing
+   descriptions (`SERVER_FLAGS=` in the Pi's `.env`); sign-in works there; webhook subscription 379571 points at
+   `https://my.gritmeter.app/webhook`.
+   Next: the official Connect button (links straight to
    Strava's authorize URL, as the brand guidelines require) and Powered by Strava logo are in `site/strava/`; the
    landing page shows "coming soon" until the app is reachable; then link its buttons to my.gritmeter.app.
 5. Ride map page per activity (a Leaflet prototype lives on the `feat/ride-map` branch).
