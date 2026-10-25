@@ -11,3 +11,6 @@ __pycache__/
 
 # wrangler local cache
 .wrangler/
+
+# local Claude Code config
+.claude/
