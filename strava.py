@@ -34,6 +34,7 @@ CALLBACK_PORT = 8721  # Strava always allows localhost as a callback domain
 RIDE_TYPES = {"Ride", "GravelRide", "MountainBikeRide", "EBikeRide", "EMountainBikeRide"}
 RATE_HEADROOM = 0.9   # pause the worker once any rate-limit window is 90% used
 MIN_KM = 0.2          # shorter GPS tracks (a recording started by mistake) aren't rated
+MAX_UNKNOWN_PCT = 50  # rides mostly off mapped roads get no block: a score from the rest would mislead
 
 usage = {}  # latest rate-limit usage from response headers: {"15min": (used, limit), "daily": (used, limit)}
 
@@ -209,6 +210,8 @@ def process(activity_id, token, write=True, auto_write=True, skip_private=False,
     r = rr.rate(points)
     if r["km"] < MIN_KM:
         return out | {"status": "skipped", "detail": "too short"}
+    if r["pct"]["unknown"] > MAX_UNKNOWN_PCT:
+        return out | {"status": "skipped", "detail": "not enough map data"}
     out["result"] = r
 
     if not write:

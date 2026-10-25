@@ -29,6 +29,7 @@ SAMPLE_M = 20         # distance between analysed track samples
 SNAP_M = 20           # max distance from a sample to a way to count as "on" it
 SMOOTH_WINDOW = 5     # majority filter over N samples (~100 m) to kill intersection flicker
 TILE_LAT, TILE_LON = 0.02, 0.03   # Overpass tile size (~2.2 x 2.2 km in CZ)
+OVERPASS_TRIES = 3    # per tile; then the ride fails and the server's job backoff retries it later
 KEEP_TAGS = {"highway", "surface", "tracktype", "smoothness", "mtb:scale", "name", "footway", "bicycle"}
 
 
@@ -201,20 +202,26 @@ def fetch_tile(ty, tx):
         return json.loads(cache.read_text())
     s, w = ty * TILE_LAT, tx * TILE_LON
     q = f"[out:json][timeout:90];way[highway]({s:.4f},{w:.4f},{s + TILE_LAT:.4f},{w + TILE_LON:.4f});out tags geom;"
-    for attempt in range(20):
+    for attempt in range(OVERPASS_TRIES):
         try:
             req = urllib.request.Request(
                 OVERPASS_URL,
                 data=urllib.parse.urlencode({"data": q}).encode(),
                 headers={"User-Agent": "pathfinder-surface-mix/1.0"},
             )
-            with urllib.request.urlopen(req, timeout=180) as r:
+            with urllib.request.urlopen(req, timeout=120) as r:
                 data = json.load(r)
+            # a timed-out or out-of-memory query still answers 200, with a remark and no or only some ways:
+            # caching that would leave the tile empty for good
+            if "remark" in data:
+                raise RuntimeError(data["remark"])
             break
         except Exception as e:  # the public instance 504s ~50% of the time under load
-            time.sleep(min(5 + 3 * attempt, 30))
+            err = e
+            if attempt + 1 < OVERPASS_TRIES:
+                time.sleep(5 * 3 ** attempt)
     else:
-        raise RuntimeError(f"Overpass failed for tile {ty}_{tx}")
+        raise RuntimeError(f"Overpass failed for tile {ty}_{tx}: {err}")
     ways = [
         {
             "id": el["id"],
