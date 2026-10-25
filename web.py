@@ -141,6 +141,9 @@ h2 { font-weight: 900; letter-spacing: -.04em; line-height: 1.05; font-size: 1.5
   text-decoration: underline; text-underline-offset: 3px; }
 .nomatch { margin-top: 24px; }
 [hidden] { display: none !important; }
+.past { margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--rule); }
+.past > p { margin-top: 8px; max-width: 34em; font-size: .9375rem; }
+.past .month-group:first-of-type .month { margin-top: 28px; }
 .month { margin: 40px 0 12px; font-size: 1.125rem; letter-spacing: -.02em; color: var(--ink-2); }
 .rides { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .ride { scroll-margin-top: 140px; padding: 12px 16px 10px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow);
@@ -358,10 +361,10 @@ def _state_live(job, csrf):
         return ('<span class="dot on"></span>in the description',
                 _action(aid, "remove", "minus", "remove", csrf))
     if s == "rated":
-        why = {"auto-add off": "auto-add is off", "private ride": "private ride", "past ride": "ride from before you joined"}
+        why = {"auto-add off": ": auto-add is off", "private ride": ": private ride", "past ride": ""}  # past: own section
         if (d or "").startswith("type off "):
-            why[d] = RIDE_TYPE_NAMES.get(d.split()[-1], "this ride type") + " are off"
-        return f"{dot}not added: {why.get(d, d)}", _action(aid, "add", "plus", "add to description", csrf, line=False)
+            why[d] = ": " + RIDE_TYPE_NAMES.get(d.split()[-1], "this ride type") + " are off"
+        return f"{dot}not added{why.get(d, ': ' + (d or ''))}", _action(aid, "add", "plus", "add to description", csrf, line=False)
     if s == "dryrun":
         text = "gritmeter isn't writing to Strava yet" if not WRITING else "rated before gritmeter went live"
         return f"{dot}not added: {text}", _action(aid, "add", "plus", "add to description", csrf, line=False)
@@ -408,6 +411,24 @@ def _ride(job, csrf):
             f'<div class="foot"><p class="status">{status}</p><div class="actions">{button}{_strava_link(aid)}</div></div></li>')
 
 
+def _is_past(job, connected_at):
+    """Did the ride start before the athlete connected? start_date is local time, so near the edge this is off by
+    the rider's time zone."""
+    if not connected_at or not job["start_date"]:
+        return False
+    joined = datetime.datetime.fromtimestamp(connected_at, datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    return job["start_date"][:19] < joined
+
+
+def _months(jobs, csrf):
+    """Rides (newest first) grouped under a heading per month."""
+    groups = {}
+    for j in jobs:
+        groups.setdefault(_month(j["start_date"]), []).append(j)
+    return "".join(f'<section class="month-group"><h2 class="month">{month}</h2><ul class="rides">'
+                   + "".join(_ride(j, csrf) for j in js) + "</ul></section>" for month, js in groups.items())
+
+
 def _skipped(jobs):
     """Activities gritmeter didn't rate, folded into one list at the end."""
     if not jobs:
@@ -440,7 +461,7 @@ FILTER_JS = """<script>
     // keep the range valid: "from" can't pass "to" and the other way round
     document.getElementById("d-from").max = sel.to || "";
     document.getElementById("d-to").min = sel.from || "";
-    document.querySelectorAll(".month-group").forEach(function (m) { m.hidden = !m.querySelector(".ride:not([hidden])"); });
+    document.querySelectorAll(".month-group, .past").forEach(function (m) { m.hidden = !m.querySelector(".ride:not([hidden])"); });
     var on = Object.keys(sel).some(function (k) { return sel[k]; });
     document.querySelector(".shown").hidden = !on;
     document.querySelector(".shown span").textContent = shown + " of " + rides.length + " rides";
@@ -478,12 +499,11 @@ def activities_page(athlete, jobs, csrf, code=""):
                  f'<div><b class="tnum">{avg:.1f}</b><span>average roughness, {rr.label(avg)}</span></div></div>'
                  '<p class="scale muted">roughness runs from 0, smooth tarmac, to 100, very rough.</p>')
 
-    groups, listing = {}, ""
-    for j in rides:  # already newest first
-        groups.setdefault(_month(j["start_date"]), []).append(j)
-    for month, js in groups.items():
-        listing += (f'<section class="month-group"><h2 class="month">{month}</h2><ul class="rides">'
-                    + "".join(_ride(j, csrf) for j in js) + "</ul></section>")
+    past = [j for j in rides if _is_past(j, athlete.get("connected_at"))]
+    listing = _months([j for j in rides if j not in past], csrf)
+    if past:
+        listing += ('<section class="past"><h2>before you joined</h2><p class="muted">rated when you asked. their '
+                    'descriptions stay as they are unless you add the summary.</p>' + _months(past, csrf) + "</section>")
 
     filters = ""
     types = sorted({j["sport_type"] for j in rides if j.get("sport_type")})
