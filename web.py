@@ -59,7 +59,8 @@ a { color: inherit; text-underline-offset: 3px; }
 .top .wrap { display: flex; align-items: center; gap: 16px; min-height: 68px; flex-wrap: wrap; }
 .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 900; letter-spacing: -.06em; font-size: 1.4rem; }
 .top nav { margin-left: auto; }
-.tools { display: flex; align-items: center; gap: 10px; }
+.tools { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.top nav + .tools { margin-left: 0; }
 /* segmented controls: a soft track, the current option raised on it */
 .tabs, .theme { display: flex; gap: 2px; padding: 3px; background: var(--paper-2); border-radius: var(--r); }
 .tabs a, .theme button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 34px; border-radius: var(--r-sm);
@@ -87,7 +88,7 @@ a { color: inherit; text-underline-offset: 3px; }
 .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font: inherit; font-weight: 800; letter-spacing: -.01em;
   padding: 12px 20px; border-radius: var(--r); background: var(--ink); color: var(--paper); border: 0; cursor: pointer; white-space: nowrap;
   transition: transform .15s, background .15s; }
-.btn.sm { padding: 7px 13px; font-size: .875rem; border-radius: var(--r-sm); gap: 6px; }
+.btn.sm { padding: 4px 10px; font-size: .8125rem; border-radius: var(--r-sm); gap: 6px; }
 .btn.line { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--rule); }
 .btn.line:hover { background: var(--paper-2); }
 .btn:hover { transform: translateY(-1px); }
@@ -119,22 +120,41 @@ h2 { font-weight: 900; letter-spacing: -.04em; line-height: 1.05; font-size: 1.5
 .stats div { padding: 16px 18px 14px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); }
 .stats b { display: block; font-weight: 900; font-size: 2rem; letter-spacing: -.04em; line-height: 1; }
 .stats span { display: block; margin-top: 6px; font-size: .8125rem; color: var(--ink-2); line-height: 1.3; }
+.scale { margin-top: 10px; font-size: .8125rem; }
+/* filters: each group a labelled track (label, then options); a result line with a reset under them */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+.seg, .dates { display: flex; align-items: center; gap: 2px; padding: 3px; background: var(--paper-2); border-radius: var(--r);
+  font-size: .875rem; color: var(--ink-2); }
+.seg > span, .dates label { padding: 0 8px 0 9px; font-size: .8125rem; font-weight: 500; white-space: nowrap; }
+.dates label + input + label { padding-left: 10px; }
+.seg button { height: 30px; padding: 0 12px; border-radius: var(--r-sm); border: 0; background: none; cursor: pointer; color: var(--ink-2);
+  font: inherit; font-weight: 700; white-space: nowrap; transition: background .15s, color .15s; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: var(--shadow); }
+.dates input { height: 30px; min-width: 0; padding: 0 8px; border: 0; border-radius: var(--r-sm); background: var(--raised); color: var(--ink);
+  font: inherit; font-weight: 500; box-shadow: var(--shadow); }
+.seg button:focus-visible, .dates input:focus-visible, .reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.shown { display: flex; align-items: baseline; gap: 12px; margin-top: 12px; font-size: .875rem; }
+.reset { padding: 0; border: 0; background: none; cursor: pointer; font: inherit; font-weight: 700; color: var(--ink);
+  text-decoration: underline; text-underline-offset: 3px; }
+.nomatch { margin-top: 24px; }
+[hidden] { display: none !important; }
 .month { margin: 40px 0 12px; font-size: 1.125rem; letter-spacing: -.02em; color: var(--ink-2); }
 .rides { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-.ride { scroll-margin-top: 140px; padding: 18px 20px 16px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow);
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 20px; }
+.ride { scroll-margin-top: 140px; padding: 12px 16px 10px; background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 16px; }
 .ride:target { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
 .ride .meta { font-size: .8125rem; }
-.ride h3 { font-weight: 800; letter-spacing: -.02em; font-size: 1.2rem; line-height: 1.25; margin-top: 2px; }
+.ride h3 { font-weight: 800; letter-spacing: -.02em; font-size: 1.05rem; line-height: 1.2; margin-top: 0; }
 .ride .score { align-self: start; display: flex; align-items: center; gap: 10px; }
-.ride .score b { font-weight: 900; font-size: 2.3rem; letter-spacing: -.05em; line-height: .9; }
+.ride .score b { font-weight: 900; font-size: 1.8rem; letter-spacing: -.05em; line-height: .9; }
 .badge { display: inline-block; font-family: var(--mono); font-weight: 500; font-size: .6875rem; letter-spacing: .1em;
   text-transform: uppercase; padding: 4px 9px 3px; border-radius: 999px; background: var(--paper-2); color: var(--ink); }
-.mix { grid-column: 1 / -1; display: flex; gap: 2px; height: 8px; margin-top: 12px; border-radius: 999px; overflow: hidden; }
+.mix { grid-column: 1 / -1; display: flex; gap: 2px; height: 6px; margin-top: 8px; border-radius: 999px; overflow: hidden; }
 .mix i { height: 100%; min-width: 2px; }
 .mixtext { grid-column: 1 / -1; margin-top: 4px; font-size: .8125rem; }
 .foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
-  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--rule); }
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--rule); }
 .status { font-size: .9375rem; color: var(--ink-2); }
 .status .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-2); margin-right: 8px; vertical-align: 1px; opacity: .6; }
 .status .dot.on { background: var(--accent); opacity: 1; }
@@ -151,8 +171,11 @@ h2 { font-weight: 900; letter-spacing: -.04em; line-height: 1.05; font-size: 1.5
   .stats { gap: 8px; }
   .stats b { font-size: 1.5rem; }
   .stats div { padding: 12px 12px 10px; border-radius: var(--r); }
-  .ride { padding: 16px 16px 14px; }
-  .ride .score b { font-size: 1.9rem; }
+  /* filters go full width so the tracks line up and nothing overflows */
+  .seg, .dates { flex: 1 1 100%; }
+  .seg button, .dates input { flex: 1; width: 0; padding: 0 6px; }
+  .ride { padding: 12px 14px 10px; }
+  .ride .score b { font-size: 1.6rem; }
 }
 
 /* settings: each group a card */
@@ -279,7 +302,7 @@ def login_page(authorize_url, code=""):
 see what it rated and change how it writes.</p>
 {notice(code)}
 <p style="margin-top:32px"><a class="connect" href="{escape(authorize_url)}"><img src="/strava/btn_strava_connect_with_orange.svg" alt="Connect with Strava" width="237" height="48"></a></p>
-<p class="muted" style="margin-top:16px;font-size:.9375rem">gritmeter asks to read your activities, including private
+<p class="muted" style="margin-top:16px;font-size:.8125rem;max-width:46ch">gritmeter asks to read your activities, including private
 ones, and to edit them so it can add its lines. it never changes what you wrote.</p>"""
     return shell("sign in", body)
 
@@ -370,7 +393,9 @@ def _ride(job, csrf):
     score = (f'<div class="score"><span class="badge">{escape(r["label"])}</span><b class="tnum">{int(r["score"] + .5)}</b></div>'
              if r else '<div class="score"></div>')
     status, button = _state(job, csrf)
-    return (f'<li class="ride" id="ride-{aid}"><div><p class="meta mono muted tnum">{meta}</p><h3>{name}</h3></div>{score}'
+    kind = {"road": "road", "mostly road": "road", "mixed": "mixed"}.get(r["label"], "gravel") if r else ""
+    added = "added" if job["status"] == "done" else "not-added"
+    return (f'<li class="ride" id="ride-{aid}" data-kind="{kind}" data-added="{added}" data-type="{escape(job.get("sport_type") or "")}" data-date="{(job["start_date"] or "")[:10]}"><div><p class="meta mono muted tnum">{meta}</p><h3>{name}</h3></div>{score}'
             f'{_mix(r["pct"]) if r else ""}'
             f'<div class="foot"><p class="status">{status}</p><div class="actions">{button}{_strava_link(aid)}</div></div></li>')
 
@@ -388,6 +413,47 @@ def _skipped(jobs):
             f'skipped</summary><ul>{rows}</ul></details>')
 
 
+FILTER_JS = """<script>
+(function () {
+  var sel = {}, segs = document.querySelectorAll(".seg"), rides = document.querySelectorAll(".ride");
+  try { sel = JSON.parse(sessionStorage.getItem("filters") || "{}"); } catch (e) {}
+  function apply() {
+    segs.forEach(function (g) {
+      g.querySelectorAll("button").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.v === (sel[g.dataset.f] || "")); });
+    });
+    var shown = 0;
+    rides.forEach(function (li) {
+      var d = li.dataset.date;
+      var ok = (!sel.kind || li.dataset.kind === sel.kind) && (!sel.added || li.dataset.added === sel.added)
+        && (!sel.type || li.dataset.type === sel.type) && (!sel.from || (d && d >= sel.from)) && (!sel.to || (d && d <= sel.to));
+      li.hidden = !ok; if (ok) shown++;
+    });
+    document.querySelectorAll(".dates input").forEach(function (i) { i.value = sel[i.dataset.d] || ""; });
+    // keep the range valid: "from" can't pass "to" and the other way round
+    document.getElementById("d-from").max = sel.to || "";
+    document.getElementById("d-to").min = sel.from || "";
+    document.querySelectorAll(".month-group").forEach(function (m) { m.hidden = !m.querySelector(".ride:not([hidden])"); });
+    var on = Object.keys(sel).some(function (k) { return sel[k]; });
+    document.querySelector(".shown").hidden = !on;
+    document.querySelector(".shown span").textContent = shown + " of " + rides.length + " rides";
+    document.querySelector(".nomatch").hidden = shown > 0;
+    try { sessionStorage.setItem("filters", JSON.stringify(sel)); } catch (e) {}
+  }
+  document.querySelector(".reset").addEventListener("click", function () { sel = {}; apply(); });
+  segs.forEach(function (g) {
+    g.addEventListener("click", function (e) {
+      var b = e.target.closest("button"); if (!b) return;
+      sel[g.dataset.f] = b.dataset.v; apply();
+    });
+  });
+  document.querySelectorAll(".dates input").forEach(function (i) {
+    i.addEventListener("change", function () { sel[i.dataset.d] = i.value; apply(); });
+  });
+  apply();
+})();
+</script>"""
+
+
 def activities_page(athlete, jobs, csrf, code=""):
     rides = [j for j in jobs if j["status"] != "skipped"]
     skipped = [j for j in jobs if j["status"] == "skipped"]
@@ -398,16 +464,36 @@ def activities_page(athlete, jobs, csrf, code=""):
 
     stats = ""
     if rated:
-        avg = int(sum(r["score"] for r in rated) / len(rated) + .5)
+        avg = sum(r["score"] for r in rated) / len(rated)
         stats = (f'<div class="stats"><div><b class="tnum">{len(rated)}</b><span>rides rated</span></div>'
                  f'<div><b class="tnum">{written}</b><span>with the summary</span></div>'
-                 f'<div><b class="tnum">{avg}</b><span>average roughness</span></div></div>')
+                 f'<div><b class="tnum">{avg:.1f}</b><span>average roughness, {rr.label(avg)}</span></div></div>'
+                 '<p class="scale muted">roughness runs from 0, smooth tarmac, to 100, very rough.</p>')
 
     groups, listing = {}, ""
     for j in rides:  # already newest first
         groups.setdefault(_month(j["start_date"]), []).append(j)
     for month, js in groups.items():
-        listing += f'<h2 class="month">{month}</h2><ul class="rides">' + "".join(_ride(j, csrf) for j in js) + "</ul>"
+        listing += (f'<section class="month-group"><h2 class="month">{month}</h2><ul class="rides">'
+                    + "".join(_ride(j, csrf) for j in js) + "</ul></section>")
+
+    filters = ""
+    types = sorted({j["sport_type"] for j in rides if j.get("sport_type")})
+    if len(rated) > 1:
+        def seg(name, label, opts):
+            btns = "".join(f'<button type="button" data-v="{v}" aria-pressed="{str(v == "").lower()}">{t}</button>' for v, t in opts)
+            return (f'<div class="seg" role="group" aria-labelledby="f-{name}" data-f="{name}">'
+                    f'<span id="f-{name}">{label}</span>{btns}</div>')
+        filters = ('<div class="filters">'
+                   + seg("kind", "surface", (("", "all"), ("road", "road"), ("mixed", "mixed"), ("gravel", "gravel")))
+                   + seg("added", "summary", (("", "all"), ("added", "added"), ("not-added", "not added")))
+                   + (seg("type", "type", (("", "all"),) + tuple((t, RIDE_TYPE_NAMES.get(t, t).replace(" rides", "").replace("road and other", "road/other")) for t in types))
+                      if len(types) > 1 else "")
+                   + '<div class="dates"><label for="d-from">from</label><input type="date" id="d-from" data-d="from">'
+                     '<label for="d-to">to</label><input type="date" id="d-to" data-d="to"></div>'
+                   + '</div><p class="shown muted" hidden><span aria-live="polite"></span>'
+                     '<button type="button" class="reset">show all</button></p>'
+                   + '<p class="nomatch muted" hidden>no rides match these filters.</p>')
 
     backfill = (f'<div class="empty">{"<p>nothing yet. new rides show up here a minute or two after you upload them.</p>" if not jobs else ""}'
                 f'<p class="muted">want to see what {GM} makes of rides from before you joined? it rates rides from '
@@ -417,9 +503,9 @@ def activities_page(athlete, jobs, csrf, code=""):
     # while anything is queued, reload every few seconds (keeps the scroll position) so its status updates
     refresh = ('<script>setTimeout(function () { location.reload(); }, 4000);</script>'
                if any(j["status"] == "queued" for j in jobs) else "")
-    body = (f"{refresh}<h1>your rides</h1>{summary}{notice(code)}{warn}{stats}"
+    body = (f"{refresh}<h1>your rides</h1>{summary}{notice(code)}{warn}{stats}{filters}"
             f"{listing}{_skipped(skipped)}{backfill}")
-    return shell("rides", body, athlete, csrf, current="/")
+    return shell("rides", body + (FILTER_JS if filters else ""), athlete, csrf, current="/")
 
 
 # ---------------------------------------------------------------- settings

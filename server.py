@@ -324,7 +324,7 @@ def run_job(job, write):
             traceback.print_exc()
         return
     verify_at = time.time() + VERIFY_AFTER if p["detail"] == "written" else None
-    store.finish(act, p["status"], p["detail"], p["result"], p["name"], p["start_date"], verify_at)
+    store.finish(act, p["status"], p["detail"], p["result"], p["name"], p["start_date"], verify_at, p["sport_type"])
     score = f" score {p['result']['score']}" if p["result"] else ""
     log(f"{act}: {p['status']} ({p['detail']}){score}")
 

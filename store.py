@@ -46,6 +46,7 @@ MIGRATIONS = [
     ("jobs", "start_date", "TEXT"),                               # local start time, ISO
     ("jobs", "action", "TEXT"),                                   # rider's request: NULL (follow settings) | write | remove
     ("athletes", "sport_types", "TEXT"),                          # comma list of ride types to write; NULL = all
+    ("jobs", "sport_type", "TEXT"),                               # Strava sport_type, for the rides filter
     ("jobs", "verify_at", "REAL"),                                # when to check our written block is still there
 ]
 
@@ -166,14 +167,16 @@ def next_job():
     return dict(row) if row else None
 
 
-def finish(activity_id, status, detail=None, result=None, name=None, start_date=None, verify_at=None):
+def finish(activity_id, status, detail=None, result=None, name=None, start_date=None, verify_at=None,
+           sport_type=None):
     """Record a processed job; clears any rider action. name/start_date, and the rating after a removal, are kept
     if not given; a skip clears the rating. verify_at schedules the one follow-up check of a written block."""
     db().execute("""UPDATE jobs SET status = ?, detail = ?, action = NULL, updated = ?, verify_at = ?,
                       result = CASE WHEN ? = 'skipped' THEN NULL ELSE COALESCE(?, result) END,
-                      name = COALESCE(?, name), start_date = COALESCE(?, start_date) WHERE activity_id = ?""",
+                      name = COALESCE(?, name), start_date = COALESCE(?, start_date),
+                      sport_type = COALESCE(?, sport_type) WHERE activity_id = ?""",
                  (status, detail, time.time(), verify_at, status, json.dumps(result) if result else None, name,
-                  start_date, activity_id))
+                  start_date, sport_type, activity_id))
 
 
 def next_verify():

@@ -186,10 +186,11 @@ def process(activity_id, token, write=True, auto_write=True, skip_private=False,
     write=False is a test run (never PUTs). action is the rider's explicit request: "write" (ignore auto_write and
     skip_private), "remove" (take our block out) or "rate" (rate only: past rides). write_types limits automatic
     writing to those sport_types (None = all rides). Returns a dict: status ("done", "rated", "dryrun", "removed",
-    "skipped"), detail, result (rate() output or None), name, start_date. About 4 API calls per written ride.
+    "skipped"), detail, result (rate() output or None), name, start_date, sport_type. About 4 API calls per written ride.
     """
     act = request("GET", f"{API}/activities/{activity_id}", token)
-    out = {"name": act.get("name"), "start_date": act.get("start_date_local"), "result": None}
+    out = {"name": act.get("name"), "start_date": act.get("start_date_local"),
+           "sport_type": act.get("sport_type"), "result": None}
     current = act.get("description") or ""
 
     if action == "remove":
