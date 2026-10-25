@@ -114,6 +114,19 @@ fetches them from Overpass one by one, then it is rated; other rides keep going 
    Strava's authorize URL, as the brand guidelines require) and Powered by Strava logo are in `site/strava/`; the
    landing page shows "coming soon" until the app is reachable; then link its buttons to my.gritmeter.app.
 5. Ride map page per activity (a Leaflet prototype lives on the `feat/ride-map` branch).
+6. **Legal / privacy (todo, before opening to other riders or applying for Strava review).**
+   - Privacy policy page (gritmeter.app + linked from my.gritmeter.app sign-in and footer): who runs it (controller),
+     what we store (Strava athlete id, first name, OAuth tokens, scope; per ride: activity id, name, start date, sport
+     type, status, rating result; no GPS streams kept), why (legal basis: providing the service the rider connected),
+     where (Pi at home, SQLite in `data/`; Cloudflare tunnel/Workers as processor), how long, and rider rights
+     (access, deletion = Disconnect, contact address).
+   - Retention: decide how long jobs/results live after disconnect or inactivity; check that Disconnect really deletes
+     everything (DB rows, logs, backups) and that the Strava deauthorize webhook does the same.
+   - Terms of use / disclaimer: ratings are estimates from OpenStreetMap, no warranty; we edit the rider's Strava
+     descriptions on their behalf.
+   - Strava API Agreement + brand guidelines compliance (data use, no sharing with others, no AI/ML), needed for review.
+   - Cookies: only the session cookie (strictly necessary), so no consent banner; say so in the policy.
+   - GDPR basics: records of processing, a contact email, breach handling; check whether Cloudflare needs a DPA.
 
 ## Open questions
 - Personal-only vs. open to other riders (drives Strava approval and Phase 4).
