@@ -51,7 +51,7 @@ The classifier is tuned on rides in Czechia, so other regions may read less accu
 
 ## This repository
 
-Analysis pipeline (plain Python scripts; see `CLAUDE.md` for commands and `PLAN.md` for the roadmap):
+Analysis pipeline (plain Python scripts; see `AGENTS.md` for commands and `PLAN.md` for the roadmap):
 
 - `surface_mix.py`: OSM tile fetch/cache, snapping the track to OSM ways.
 - `ride_rating.py`: the six grades, the roughness score and the description block.
