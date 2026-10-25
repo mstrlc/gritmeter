@@ -307,7 +307,10 @@ def heartbeat():
         log(f"down since {time.strftime('%Y-%m-%d %H:%M', time.localtime(alive))}, will catch up")
     while True:
         try:
-            urllib.request.urlopen(public_url() + "/health", timeout=15).read()
+            # Cloudflare answers 403 to Python's default User-Agent
+            req = urllib.request.Request(public_url() + "/health",
+                                         headers={"User-Agent": "gritmeter-heartbeat/1.0 (+https://gritmeter.app)"})
+            urllib.request.urlopen(req, timeout=15).read()
             store.set_state("alive_at", time.time())
         except Exception as e:
             if store.get_state("outage_since") is None:
