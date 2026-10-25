@@ -1,0 +1,644 @@
+<title>Gritmeter Identity</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Epilogue:wght@100..900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* layout: a survey sheet. Mono margin notes frame bold panels; grid refs (A–G) locate each part of the system. */
+:root {
+  --paper: #eef0ea;      /* cool survey paper, slight green */
+  --paper-2: #e3e6dd;    /* panel tint */
+  --ink: #13161a;        /* blue-black print */
+  --ink-2: #555c63;      /* secondary text */
+  --rule: #c6cbc0;       /* sheet rules, grid */
+  --contour: #b9946b;    /* contour brown */
+  --accent: #c42e2a;     /* rough red, the G5 colour: what gritmeter adds or picks out, links, focus */
+  --on-accent: #ffffff;
+
+  /* surface grades G0–G5, the roughness weights from ride_rating.py */
+  --g0: #3a3f46;  /* asphalt */
+  --g1: #7487a3;  /* paved rough */
+  --g2: #d3ab3c;  /* hardpack */
+  --g3: #dc7429;  /* gravel */
+  --g4: #8a522c;  /* dirt */
+  --g5: #c42e2a;  /* rough */
+  --gu: #a7aca2;  /* unknown */
+  --casing: #eef0ea;
+
+  --display: "Epilogue", "Helvetica Neue", Arial, sans-serif;
+  --body: "Epilogue", "Helvetica Neue", Arial, sans-serif;
+  --mono: "DM Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --dw: 900; --ds: 100%; --dt: -.055em;   /* display weight, width, tracking */
+  --ws: 100%; --wt: -.06em;               /* wordmark width, tracking */
+  --dz: 1;                                /* display size factor */
+  --gutter: clamp(16px, 4vw, 48px);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #0f1214; --paper-2: #171b1e; --ink: #e7e9e2; --ink-2: #99a09a; --rule: #2b3034;
+  --contour: #6b5640; --accent: #ee5a4e; --on-accent: #0f1214;
+  --g0: #b4bac1; --g1: #8ea2c2; --g2: #e3c157; --g3: #f08d3d; --g4: #b8794a; --g5: #ee5a4e; --gu: #4c5256;
+  --casing: #0f1214; color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --paper: #0f1214; --paper-2: #171b1e; --ink: #e7e9e2; --ink-2: #99a09a; --rule: #2b3034;
+  --contour: #6b5640; --accent: #ee5a4e; --on-accent: #0f1214;
+  --g0: #b4bac1; --g1: #8ea2c2; --g2: #e3c157; --g3: #f08d3d; --g4: #b8794a; --g5: #ee5a4e; --gu: #4c5256;
+  --casing: #0f1214; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 400 1rem/1.55 var(--body);
+  -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.sheet { max-width: 1240px; margin-inline: auto; padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px)); }
+
+/* type system */
+.mono { font-family: var(--mono); font-weight: 300; font-size: .6875rem; letter-spacing: .12em; text-transform: uppercase;
+  line-height: 1.6; }
+.mono.lt { font-weight: 200; }
+.mono.b { font-weight: 500; }
+.muted { color: var(--ink-2); }
+.disp { font-family: var(--display); font-weight: var(--dw); font-stretch: var(--ds); letter-spacing: var(--dt); line-height: .9;
+  text-wrap: balance; margin: 0; }
+h2.disp { font-size: calc(clamp(2.2rem, 5.5vw, 4rem) * var(--dz)); }
+h3 { font-family: var(--display); font-weight: 800; letter-spacing: -.015em; font-size: 1.25rem; line-height: 1.15; margin: 0; }
+p { margin: 0; max-width: 60ch; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* sheet header */
+.top { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; align-items: center;
+  padding-block: 14px; border-bottom: 1px solid var(--ink); }
+.top .mono span + span::before { content: "·"; margin: 0 .7em; color: var(--ink-2); }
+.theme { display: flex; gap: 0; border: 1px solid var(--ink); }
+.theme button { font: inherit; background: none; color: var(--ink); border: 0; padding: 4px 10px; cursor: pointer; }
+.theme button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+/* hero */
+.hero { position: relative; border-bottom: 1px solid var(--ink); overflow: hidden; }
+.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.hero-in { position: relative; display: grid; gap: 28px; padding-block: clamp(36px, 7vw, 88px) 32px; }
+.hero h1 { font-size: calc(clamp(3rem, 11vw, 9.5rem) * var(--dz)); max-width: 10ch; }
+.hero .lede { font-size: clamp(1.05rem, 1.8vw, 1.3rem); max-width: 34ch; font-weight: 450; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 6px 28px; }
+
+/* strip map: one ride as a straight line, km ticks below */
+.strip { display: grid; gap: 6px; }
+.strip svg { width: 100%; height: 44px; display: block; overflow: visible; }
+.ticks { display: flex; justify-content: space-between; }
+
+/* sections */
+section { border-bottom: 1px solid var(--rule); padding-block: clamp(48px, 7vw, 88px); }
+.sec-head { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: clamp(28px, 4vw, 44px); }
+@media (min-width: 860px) { .sec-head { grid-template-columns: 9rem 1fr; align-items: start; } }
+.ref { display: flex; gap: 10px; align-items: center; }
+.ref b { display: inline-grid; place-items: center; width: 26px; height: 26px; border: 1px solid var(--ink);
+  font-family: var(--mono); font-weight: 500; font-size: .75rem; }
+.sec-head p { margin-top: 14px; color: var(--ink-2); }
+
+/* wordmark: heavy word + thin mono descriptor */
+.wm { display: inline-flex; align-items: baseline; gap: .45em; font-family: var(--display); font-weight: var(--dw);
+  font-stretch: var(--ws); letter-spacing: var(--wt);
+  line-height: 1; white-space: nowrap; }
+.wm small { font-family: var(--mono); font-weight: 200; font-size: .3em; letter-spacing: .16em; text-transform: uppercase;
+  transform: translateY(-.15em); }
+
+.logo-grid { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.tile { background: var(--paper); padding: 28px 24px 18px; display: grid; gap: 22px; align-content: space-between; min-height: 220px; }
+.tile.inv { background: var(--ink); color: var(--paper); --casing: var(--ink); }
+.tile.big { grid-column: 1 / -1; min-height: 280px; }
+.tile .stage { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
+.tile.big .wm { font-size: calc(clamp(2.6rem, 8vw, 7rem) * var(--dz)); flex-wrap: wrap; white-space: normal; row-gap: .25em; min-width: 0; }
+.tile.big .wm small { white-space: nowrap; }
+.tile .cap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.mark { display: block; flex: none; }
+.lockup { display: flex; align-items: center; gap: 12px; }
+.lockup .wm { font-size: 1.6rem; }
+
+/* type specimens */
+.specs { display: grid; gap: 0; border-top: 1px solid var(--ink); }
+.spec { display: grid; grid-template-columns: 1fr; gap: 10px 32px; padding-block: 24px; border-bottom: 1px solid var(--rule); }
+@media (min-width: 860px) { .spec { grid-template-columns: 15rem 1fr; } }
+.spec .s1 { font-size: calc(clamp(2.6rem, 7vw, 5.5rem) * var(--dz)); }
+.spec .s2 { font-family: var(--display); font-weight: 800; letter-spacing: -.02em; font-size: 1.75rem; line-height: 1.1; }
+.spec .s3 { font-size: 1.0625rem; max-width: 58ch; }
+.spec .s5 { font-family: var(--mono); font-size: clamp(1rem, 2vw, 1.375rem); line-height: 1.5; }
+.spec .s4 { font-size: .8125rem; }
+.scale { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 26px; }
+.scale span { font-family: var(--display); font-weight: 900; letter-spacing: -.03em; line-height: 1; }
+
+/* surface symbology */
+.legend-table { width: 100%; border-collapse: collapse; min-width: 720px; }
+.table-wrap { overflow-x: auto; border-top: 1px solid var(--ink); }
+.legend-table th, .legend-table td { text-align: left; padding: 16px 14px 16px 0; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.legend-table th { font-family: var(--mono); font-weight: 300; font-size: .6875rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-2); padding-block: 10px; }
+.legend-table .gr { font-family: var(--mono); font-weight: 600; font-size: .8125rem; }
+.legend-table .lname { font-family: var(--display); font-weight: 800; font-size: 1.125rem; letter-spacing: -.01em; }
+.legend-table .tags { font-family: var(--mono); font-size: .6875rem; font-weight: 300; color: var(--ink-2); }
+.legend-table svg { display: block; }
+.sw { width: 28px; height: 28px; display: block; }
+
+.swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; margin-top: 40px; }
+.chip { display: grid; gap: 8px; }
+.chip i { display: block; height: 64px; border: 1px solid var(--rule); }
+
+/* components */
+.comp { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+.panel { border: 1px solid var(--ink); padding: 22px 20px; display: grid; gap: 18px; align-content: start; min-width: 0; }
+.panel > .mono:first-child { border-bottom: 1px solid var(--rule); padding-bottom: 10px; margin: -4px 0 0; }
+.score { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.score b { font-family: var(--display); font-weight: 900; font-size: 5rem; letter-spacing: -.05em; line-height: .85; }
+.badge { display: inline-block; font-family: var(--mono); font-weight: 500; font-size: .6875rem; letter-spacing: .14em;
+  text-transform: uppercase; padding: 4px 8px 3px; border: 1px solid currentColor; }
+.badge.fill { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+/* scale bar in the style of a map scale: alternating blocks, roughness bands */
+.scalebar { display: grid; gap: 6px; }
+.scalebar .blocks { position: relative; display: flex; height: 10px; border: 1px solid var(--ink); }
+.scalebar .blocks i { height: 100%; border-right: 1px solid var(--ink); }
+.scalebar .blocks i:nth-child(odd) { background: var(--ink); }
+.scalebar .blocks i:last-child { border-right: 0; }
+.scalebar .pin { position: absolute; top: -9px; width: 2px; height: 26px; background: var(--accent); transform: translateX(-1px); }
+.scalebar .lbls { position: relative; height: 1.2em; }
+.scalebar .lbls span { position: absolute; transform: translateX(-50%); }
+.scalebar .lbls span:first-child { transform: none; }
+.scalebar .lbls span:last-child { transform: translateX(-100%); }
+
+.bar { display: flex; gap: 3px; height: 14px; }
+.bar i { height: 100%; min-width: 3px; }
+.rows { display: grid; }
+.row { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; padding-block: 7px;
+  border-bottom: 1px solid var(--rule); }
+.row:last-child { border-bottom: 0; }
+.row .n { font-weight: 600; }
+.row .pct { font-family: var(--mono); font-weight: 400; font-size: .75rem; }
+
+.btns { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { font: inherit; font-family: var(--display); font-weight: 800; letter-spacing: -.01em; font-size: 1rem; padding: 13px 20px 12px;
+  border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer; display: inline-flex;
+  gap: 14px; align-items: center; }
+.btn .mono { font-size: .625rem; }
+.btn.ghost { background: transparent; color: var(--ink); }
+.btn.accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn:hover { transform: translateY(-1px); }
+
+pre.strava { margin: 0; font: 400 .875rem/1.6 var(--mono);
+  white-space: pre-wrap; background: var(--paper-2); padding: 16px; overflow-x: auto; }
+
+/* ride card */
+.card { border: 1px solid var(--ink); display: grid; grid-template-columns: 1fr; min-width: 0; }
+@media (min-width: 760px) { .card { grid-template-columns: 1.2fr 1fr; } }
+.card .map { position: relative; background: var(--paper-2); min-height: 280px; border-bottom: 1px solid var(--ink); overflow: hidden; }
+@media (min-width: 760px) { .card .map { border-bottom: 0; border-right: 1px solid var(--ink); } }
+.card .map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.card .map .coord { position: absolute; left: 12px; bottom: 10px; }
+.card .map .north { position: absolute; right: 12px; top: 10px; text-align: center; }
+.card .body { padding: 22px 20px; display: grid; gap: 18px; align-content: start; min-width: 0; }
+.card h3 { font-size: 1.6rem; }
+
+.icons { display: flex; flex-wrap: wrap; gap: 28px; align-items: end; }
+.icons figure { margin: 0; display: grid; gap: 8px; justify-items: start; }
+
+.rules { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.rules div { background: var(--paper); padding: 20px; display: grid; gap: 8px; align-content: start; }
+
+footer { padding-block: 28px 48px; display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .draw path { stroke-dashoffset: 0; }
+  .hero .strip svg { animation: reveal 1.4s cubic-bezier(.3,.7,.2,1) both .1s; }
+  @keyframes reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+}
+</style>
+
+<div class="sheet">
+  <div class="top">
+    <div class="mono b"><span class="nm">gritmeter</span><span>Identity sheet</span><span>Rev. 0.1</span><span class="tnum">2026-10-24</span></div>
+    <div class="theme mono" role="group" aria-label="Theme">
+      <button type="button" id="th-auto" data-t="" aria-pressed="true">Auto</button>
+      <button type="button" id="th-light" data-t="light" aria-pressed="false">Light</button>
+      <button type="button" id="th-dark" data-t="dark" aria-pressed="false">Dark</button>
+    </div>
+  </div>
+</div>
+
+<header class="hero">
+  <canvas id="topo" aria-hidden="true"></canvas>
+  <div class="sheet hero-in">
+    <div class="mono muted">Surface index for Strava rides · OpenStreetMap-matched · every 20 m</div>
+    <h1 class="disp">Every ride gets a grade.</h1>
+    <p class="lede">We match your GPS track to OpenStreetMap, sort every stretch from G0 asphalt to G5 rough, and write the result into your Strava description.</p>
+    <div class="strip" aria-label="Example strip map of a 73.3 km ride">
+      <svg id="hero-strip" viewBox="0 0 1000 44" preserveAspectRatio="none"></svg>
+      <div class="ticks mono muted tnum" id="hero-ticks"></div>
+    </div>
+    <div class="hero-meta mono">
+      <span class="b">Židlochovice loop</span>
+      <span class="muted tnum">49.0397°N 16.6187°E</span>
+      <span class="tnum">73.3 km</span>
+      <span class="tnum">Score 16.4 / 100</span>
+      <span>Mixed</span>
+      <span class="muted">Segment order illustrative</span>
+    </div>
+  </div>
+</header>
+
+<main class="sheet">
+
+  <section id="logo">
+    <div class="sec-head">
+      <div class="ref"><b>A</b><span class="mono">Logo</span></div>
+      <div>
+        <h2 class="disp">Heavy word, thin coordinates.</h2>
+        <p>The wordmark pairs a tightly set black geometric grotesk with a hairline monospace descriptor, the way a map sets a place name over its grid reference. The mark is the grade scale itself: one solid bar breaking into long dashes, short dashes and dots, the way a map draws road, track, path and rough ground. It is drawn in ink, with a colour version only where it explains the data.</p>
+      </div>
+    </div>
+    <div class="logo-grid">
+      <div class="tile big">
+        <div class="stage"><span class="wm"><span class="nm">gritmeter</span><small>Surface&nbsp;index</small></span></div>
+        <div class="cap mono muted"><span>Primary wordmark</span><span>Epilogue · DM Mono</span></div>
+      </div>
+      <div class="tile">
+        <div class="stage">
+          <svg class="mark" width="96" height="96" viewBox="0 0 64 64" aria-label="Mark"><use href="#mark-sym"/></svg>
+          <svg class="mark" width="48" height="48" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark-sym"/></svg>
+          <svg class="mark" width="24" height="24" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark-sym-sm"/></svg>
+          <svg class="mark" width="96" height="96" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark-sym-col"/></svg>
+        </div>
+        <div class="cap mono muted"><span>Mark</span><span>96 · 48 · 24 px (3 rows) · colour = G0 G2 G3 G5</span></div>
+      </div>
+      <div class="tile inv">
+        <div class="stage lockup">
+          <svg class="mark" width="44" height="44" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark-sym"/></svg>
+          <span class="wm"><span class="nm">gritmeter</span></span>
+        </div>
+        <div class="cap mono" style="opacity:.7"><span>Horizontal lockup, inverse</span><span>Gap = 1/4 mark</span></div>
+      </div>
+      <div class="tile">
+        <div class="stage" style="flex-direction:column;align-items:flex-start;gap:6px">
+          <span class="mono b" style="font-size:.75rem"><span class="nm">gritmeter</span></span>
+          <span class="mono lt muted">G0 ▸ G5 · 0–100 roughness</span>
+        </div>
+        <div class="cap mono muted"><span>Mono signature</span><span>For footers, the Strava text block, CLI output</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="type">
+    <div class="sec-head">
+      <div class="ref"><b>B</b><span class="mono">Type</span></div>
+      <div>
+        <h2 class="disp">Two families, three voices.</h2>
+        <p>A heavy display face for headlines and numbers, a plain face for reading, and a light monospace for what the machine writes: the lines in a Strava description, and data values like distances, tags and grades. In the product it stays in normal case and is never used for interface labels.</p>
+      </div>
+    </div>
+    <div class="specs">
+      <div class="spec">
+        <div class="mono muted">Display<br>Epilogue · black</div>
+        <div class="disp s1">Pálava, 79.2 km</div>
+      </div>
+      <div class="spec">
+        <div class="mono muted">Heading<br>Epilogue · 800</div>
+        <div class="s2">13% of this ride was off asphalt</div>
+      </div>
+      <div class="spec">
+        <div class="mono muted">Body<br>Epilogue · 400 · 17/26</div>
+        <p class="s3">Each sample snaps to the nearest OpenStreetMap way within 20 metres. A majority filter over about 100 metres removes flicker where a track crosses a road, then each way's tags decide its grade.</p>
+      </div>
+      <div class="spec">
+        <div class="mono muted">Machine<br>DM Mono · 400 · normal case</div>
+        <div class="s5">73% asphalt · 11% hardpack · 7% rough · 6% gravel</div>
+      </div>
+      <div class="spec">
+        <div class="mono muted">Sheet notes<br>DM Mono · caps · this sheet only</div>
+        <div class="mono s4">49.1951°N 16.6068°E · km 41.2 · surface=compacted · tracktype=grade2</div>
+      </div>
+      <div class="spec">
+        <div class="mono muted">Scale<br>1.333 ratio</div>
+        <div class="scale tnum">
+          <span style="font-size:5.6rem">G5</span><span style="font-size:4.2rem">G4</span><span style="font-size:3.15rem">G3</span>
+          <span style="font-size:2.37rem">G2</span><span style="font-size:1.78rem">G1</span><span style="font-size:1.33rem">G0</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="surface">
+    <div class="sec-head">
+      <div class="ref"><b>C</b><span class="mono">Symbology</span></div>
+      <div>
+        <h2 class="disp">Colour and line, never colour alone.</h2>
+        <p>Each grade has a colour that warms as the ground gets rougher, and a dash pattern that breaks up as it does. On a topo map a solid casing means paved and a dashed line means track; we keep that convention, so the map still reads in greyscale and for colour-blind riders.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table class="legend-table">
+        <thead><tr><th>Grade</th><th>Swatch</th><th>Line</th><th>Name</th><th>OSM tags that land here</th></tr></thead>
+        <tbody id="legend-body"></tbody>
+      </table>
+    </div>
+    <div class="swatches">
+      <div class="chip"><i style="background:var(--paper)"></i><span class="mono">Paper</span></div>
+      <div class="chip"><i style="background:var(--paper-2)"></i><span class="mono">Panel</span></div>
+      <div class="chip"><i style="background:var(--ink)"></i><span class="mono">Ink</span></div>
+      <div class="chip"><i style="background:var(--ink-2)"></i><span class="mono">Ink 2</span></div>
+      <div class="chip"><i style="background:var(--contour)"></i><span class="mono">Contour</span></div>
+      <div class="chip"><i style="background:var(--accent)"></i><span class="mono">Accent · G5 rough</span></div>
+    </div>
+  </section>
+
+  <section id="components">
+    <div class="sec-head">
+      <div class="ref"><b>D</b><span class="mono">Components</span></div>
+      <div>
+        <h2 class="disp">A score you read like a scale bar.</h2>
+        <p>The number is the headline. Under it, the roughness scale is drawn like a map scale: alternating blocks, one per rating band, with a red pin at the ride's score.</p>
+      </div>
+    </div>
+    <div class="comp">
+      <div class="panel">
+        <div class="mono muted">Score readout</div>
+        <div class="score"><b class="tnum">16.4</b><span class="mono muted">/ 100 roughness</span></div>
+        <div><span class="badge fill">Mixed</span></div>
+        <div class="scalebar" aria-label="Score 16.4 on a 0 to 40 plus scale">
+          <div class="blocks" id="blocks"></div>
+          <div class="lbls mono muted tnum" id="blocks-lbl"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="mono muted">Surface bar + legend</div>
+        <div class="bar" id="mix-bar"></div>
+        <div class="rows" id="mix-rows"></div>
+      </div>
+      <div class="panel">
+        <div class="mono muted">Actions + labels</div>
+        <div class="btns">
+          <button type="button" class="btn">Rate my rides <span class="mono lt">↗</span></button>
+          <button type="button" class="btn ghost">See a sample</button>
+          <button type="button" class="btn accent">Open map</button>
+        </div>
+        <div class="btns">
+          <span class="badge">Road</span><span class="badge">Mostly road</span><span class="badge fill">Mixed</span>
+          <span class="badge">Gravel</span><span class="badge">Rough gravel</span>
+        </div>
+        <p class="mono muted">Strava's own "Connect with Strava" button is used as supplied; it is never restyled.</p>
+      </div>
+      <div class="panel">
+        <div class="mono muted">Strava description block · plain text</div>
+        <pre class="strava" id="strava"></pre>
+        <p class="mono muted">Appended after the rider's own text. Re-runs replace only the block that starts with "surface by gritmeter.app".</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="apply">
+    <div class="sec-head">
+      <div class="ref"><b>E</b><span class="mono">In use</span></div>
+      <div>
+        <h2 class="disp">The ride page.</h2>
+        <p>Map on the left, readout on the right. Lines sit on a paper-coloured casing so they stay legible over any basemap.</p>
+      </div>
+    </div>
+    <article class="card">
+      <div class="map">
+        <svg viewBox="0 0 600 340" preserveAspectRatio="xMidYMid slice" id="card-map" aria-label="Route map"></svg>
+        <div class="north mono"><div style="font-size:1rem;font-weight:500">▲</div>N</div>
+        <div class="coord mono muted tnum">46.3683°N 14.1146°E · 1:50 000</div>
+      </div>
+      <div class="body">
+        <div class="mono muted tnum">2026-08-26 · 92.5 km · Bled</div>
+        <h3>Bled Gravel/Unpaved Cycling</h3>
+        <div class="score"><b class="tnum" style="font-size:3.6rem">19.8</b><span class="badge fill">Mixed</span></div>
+        <div class="bar" id="card-bar"></div>
+        <div class="rows" id="card-rows"></div>
+        <div class="mono muted" style="font-size:.625rem">© OpenStreetMap contributors · Powered by Strava</div>
+      </div>
+    </article>
+  </section>
+
+  <section id="icons">
+    <div class="sec-head">
+      <div class="ref"><b>F</b><span class="mono">Icon</span></div>
+      <div>
+        <h2 class="disp">Small sizes.</h2>
+        <p>Below 32 px the mark drops to three heavier rows so the gaps don't fill in.</p>
+      </div>
+    </div>
+    <div class="icons">
+      <figure><svg width="120" height="120" viewBox="0 0 64 64" aria-label="App icon"><rect width="64" height="64" rx="14" fill="var(--ink)"/><g style="color:var(--paper)"><use href="#mark-sym" transform="translate(14 14) scale(.5625)"/></g></svg><figcaption class="mono muted">App · 120</figcaption></figure>
+      <figure><svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="var(--ink)"/><g style="color:var(--paper)"><use href="#mark-sym" transform="translate(14 14) scale(.5625)"/></g></svg><figcaption class="mono muted">64</figcaption></figure>
+      <figure><svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark-sym-sm"/></svg><figcaption class="mono muted">32</figcaption></figure>
+      <figure><svg width="16" height="16" viewBox="0 0 64 64" aria-hidden="true"><use href="#mark-sym-sm"/></svg><figcaption class="mono muted">16</figcaption></figure>
+    </div>
+  </section>
+
+  <section id="rules">
+    <div class="sec-head">
+      <div class="ref"><b>G</b><span class="mono">Rules</span></div>
+      <div><h2 class="disp">House rules.</h2></div>
+    </div>
+    <div class="rules">
+      <div><h3>Black for words</h3><p class="muted">Headlines are always 800–900. Never set display type in a light weight.</p></div>
+      <div><h3>Mono for the machine</h3><p class="muted">What gritmeter writes, and data values, go in DM Mono in normal case. Never use it for interface labels.</p></div>
+      <div><h3>Grades keep their line</h3><p class="muted">A grade colour always travels with its dash pattern or its G-number.</p></div>
+      <div><h3>One red</h3><p class="muted">Rough red, the G5 colour, marks what gritmeter adds or picks out: its lines in a description, the score pin, a selected section, focus. Nothing else.</p></div>
+      <div><h3>Show the unknown</h3><p class="muted">Untagged ways stay grey and hatched, and their share is always printed.</p></div>
+      <div><h3>Credit the map</h3><p class="muted">© OpenStreetMap contributors on every output; Powered by Strava in every UI.</p></div>
+    </div>
+  </section>
+</main>
+
+<div class="sheet">
+  <footer class="mono muted">
+    <span><span class="nm">gritmeter</span> · identity sheet rev. 0.1</span>
+    <span>Epilogue + DM Mono · Google Fonts · OFL</span>
+    <span>© OpenStreetMap contributors</span>
+  </footer>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="var(--paper)"/><line x1="0" y1="0" x2="0" y2="6" stroke="var(--gu)" stroke-width="3"/>
+    </pattern>
+    <!-- grade stack: the map's line styles breaking down, road -> track -> path -> rough -->
+    <g id="mark-sym" fill="currentColor">
+      <rect x="6" y="9" width="52" height="8"/>
+      <rect x="6" y="23" width="22" height="8"/><rect x="36" y="23" width="22" height="8"/>
+      <rect x="6" y="37" width="10" height="8"/><rect x="20" y="37" width="10" height="8"/><rect x="34" y="37" width="10" height="8"/><rect x="48" y="37" width="10" height="8"/>
+      <circle cx="10" cy="55" r="4"/><circle cx="21" cy="55" r="4"/><circle cx="32" cy="55" r="4"/><circle cx="43" cy="55" r="4"/><circle cx="54" cy="55" r="4"/>
+    </g>
+    <!-- below 32 px: three rows, heavier -->
+    <g id="mark-sym-sm" fill="currentColor">
+      <rect x="4" y="6" width="56" height="12"/>
+      <rect x="4" y="26" width="24" height="12"/><rect x="36" y="26" width="24" height="12"/>
+      <circle cx="10" cy="52" r="6"/><circle cx="32" cy="52" r="6"/><circle cx="54" cy="52" r="6"/>
+    </g>
+    <!-- data variant: each row in its grade colour -->
+    <g id="mark-sym-col">
+      <rect x="6" y="9" width="52" height="8" fill="var(--g0)"/>
+      <g fill="var(--g2)"><rect x="6" y="23" width="22" height="8"/><rect x="36" y="23" width="22" height="8"/></g>
+      <g fill="var(--g3)"><rect x="6" y="37" width="10" height="8"/><rect x="20" y="37" width="10" height="8"/><rect x="34" y="37" width="10" height="8"/><rect x="48" y="37" width="10" height="8"/></g>
+      <g fill="var(--g5)"><circle cx="10" cy="55" r="4"/><circle cx="21" cy="55" r="4"/><circle cx="32" cy="55" r="4"/><circle cx="43" cy="55" r="4"/><circle cx="54" cy="55" r="4"/></g>
+    </g>
+  </defs>
+</svg>
+
+<script>
+const G = [
+  { g: "G0", key: "asphalt", name: "Asphalt", dash: "", cap: "butt", tags: "surface=asphalt · chipseal · paved · untagged roads" },
+  { g: "G1", key: "paved_rough", name: "Paved, rough", dash: "16 3", cap: "butt", tags: "paving_stones · sett · cobblestone · concrete:plates" },
+  { g: "G2", key: "hardpack", name: "Hardpack", dash: "12 6", cap: "butt", tags: "compacted · fine_gravel · tracktype=grade2" },
+  { g: "G3", key: "gravel", name: "Gravel", dash: "7 5", cap: "butt", tags: "gravel · unpaved · tracktype=grade3" },
+  { g: "G4", key: "dirt", name: "Dirt", dash: "3 5", cap: "butt", tags: "dirt · ground · grass · mud · sand" },
+  { g: "G5", key: "rough", name: "Rough", dash: "0.1 10", cap: "round", tags: "rock · smoothness=bad · grade4–5 · mtb:scale≥2" },
+  { g: "G?", key: "unknown", name: "Unknown", dash: "", cap: "butt", tags: "no way within 20 m · no usable tags" },
+];
+const col = k => k === "unknown" ? "url(#hatch)" : `var(--g${G.findIndex(x => x.key === k)})`;
+const sw = k => k === "unknown" ? "var(--gu)" : col(k);
+const ns = "http://www.w3.org/2000/svg";
+const el = (tag, attrs, parent) => { const e = document.createElementNS(ns, tag); for (const a in attrs) e.setAttribute(a, attrs[a]); parent && parent.appendChild(e); return e; };
+const line = (svg, x1, y1, x2, y2, gi, w) => {
+  el("line", { x1, y1, x2, y2, stroke: "var(--casing)", "stroke-width": w + 4, "stroke-linecap": "butt" }, svg);
+  const s = G[gi];
+  return el("line", { x1, y1, x2, y2, stroke: gi === 6 ? "var(--gu)" : `var(--g${gi})`, "stroke-width": w,
+    "stroke-dasharray": s.dash.split(" ").map(v => v * w / 5).join(" "), "stroke-linecap": s.cap }, svg);
+};
+
+/* legend table */
+const tb = document.getElementById("legend-body");
+G.forEach((s, i) => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td class="gr">${s.g}</td><td></td><td></td><td class="lname">${s.name}</td><td class="tags">${s.tags}</td>`;
+  const a = el("svg", { class: "sw", viewBox: "0 0 28 28" }, tr.children[1]);
+  el("rect", { width: 28, height: 28, fill: i === 6 ? "url(#hatch)" : `var(--g${i})` }, a);
+  const b = el("svg", { width: 160, height: 20, viewBox: "0 0 160 20" }, tr.children[2]);
+  line(b, 2, 10, 158, 10, i, 6);
+  tb.appendChild(tr);
+});
+
+/* real ride data from data/ratings.json */
+const ZID = { asphalt: 72.6, paved_rough: 0.9, hardpack: 10.5, gravel: 6.0, dirt: 1.2, rough: 7.2, unknown: 1.7 };
+const BLED = { asphalt: 62.7, paved_rough: 0.1, hardpack: 13.3, gravel: 23.6, dirt: 0.0, rough: 0.3, unknown: 0.0 };
+
+/* hero strip map: proportions are real, the order of stretches is made up */
+(function () {
+  const svg = document.getElementById("hero-strip");
+  const order = [[0, 9], [2, 4], [0, 14], [3, 3], [5, 2.5], [0, 12], [2, 3.5], [1, .9], [0, 8], [5, 4.7], [3, 3], [6, 1.7], [0, 10.6], [2, 3], [4, 1.2], [0, 18.4]];
+  const tot = order.reduce((a, b) => a + b[1], 0);
+  let x = 0;
+  order.forEach(([gi, p]) => { const w = p / tot * 1000; line(svg, x, 22, x + w, 22, gi, 10); x += w; });
+  const t = document.getElementById("hero-ticks");
+  for (let km = 0; km <= 70; km += 10) { const s = document.createElement("span"); s.textContent = km; t.appendChild(s); }
+  const e = document.createElement("span"); e.textContent = "73.3 km"; t.appendChild(e);
+})();
+
+/* scale bar: rating bands from ride_rating.label */
+(function () {
+  const bands = [[0, 5, "Road"], [5, 10, "Mostly road"], [10, 20, "Mixed"], [20, 30, "Gravel"], [30, 40, "Rough gravel"]];
+  const box = document.getElementById("blocks"), lb = document.getElementById("blocks-lbl");
+  bands.forEach(([a, b]) => { const i = document.createElement("i"); i.style.width = (b - a) / 40 * 100 + "%"; box.appendChild(i); });
+  const pin = document.createElement("span"); pin.className = "pin"; pin.style.left = 16.4 / 40 * 100 + "%"; box.appendChild(pin);
+  [0, 10, 20, 30, "40+"].forEach(v => { const s = document.createElement("span"); s.textContent = v; s.style.left = (parseFloat(v) / 40 * 100) + "%"; lb.appendChild(s); });
+})();
+
+function mix(barId, rowsId, d) {
+  const bar = document.getElementById(barId), rows = document.getElementById(rowsId);
+  G.forEach((s, i) => {
+    const p = d[s.key]; if (!p) return;
+    const b = document.createElement("i"); b.style.flex = p; b.style.background = i === 6 ? "var(--gu)" : `var(--g${i})`; b.title = `${s.name} ${p}%`; bar.appendChild(b);
+    const r = document.createElement("div"); r.className = "row";
+    r.innerHTML = `<span class="mono b">${s.g}</span><span class="n">${s.name}</span><span class="pct tnum">${p.toFixed(1)}%</span>`;
+    rows.appendChild(r);
+  });
+}
+mix("mix-bar", "mix-rows", ZID);
+mix("card-bar", "card-rows", BLED);
+
+/* Strava description, as plain text */
+function stravaText(name) {
+  return `Cold start, bakery stop at 40 km.
+
+surface by ${name}.app
+73% asphalt · 11% hardpack · 7% rough · 6% gravel
+Roughness 16 / 100, mixed
+Map data © OpenStreetMap contributors`;
+}
+
+/* elliptical gaussian hill */
+function hill(x, y, cx, cy, sx, sy, a) { const dx = (x - cx) / sx, dy = (y - cy) / sy; return a * Math.exp(-(dx * dx + dy * dy)); }
+
+/* marching squares: one SVG path string per level, levels from `start` every `step` up to the field's max */
+function isolines(w, h, cell, f, start, step) {
+  const nx = Math.ceil(w / cell) + 1, ny = Math.ceil(h / cell) + 1, v = new Float32Array(nx * ny);
+  let max = -Infinity;
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const z = f(i * cell, j * cell); v[j * nx + i] = z; if (z > max) max = z; }
+  const S = { 1: ["LB"], 2: ["BR"], 3: ["LR"], 4: ["TR"], 5: ["TR", "LB"], 6: ["TB"], 7: ["TL"], 8: ["TL"], 9: ["TB"],
+    10: ["TL", "BR"], 11: ["TR"], 12: ["LR"], 13: ["RB"], 14: ["LB"] };
+  const out = [];
+  for (let L = start; L < max; L += step) {
+    let d = "";
+    for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
+      const a = v[j * nx + i], b = v[j * nx + i + 1], c = v[(j + 1) * nx + i + 1], e = v[(j + 1) * nx + i];
+      const k = (a > L ? 8 : 0) | (b > L ? 4 : 0) | (c > L ? 2 : 0) | (e > L ? 1 : 0);
+      if (!S[k]) continue;
+      const x = i * cell, y = j * cell, P = {
+        T: [x + cell * (L - a) / (b - a), y], R: [x + cell, y + cell * (L - b) / (c - b)],
+        B: [x + cell * (L - e) / (c - e), y + cell], L: [x, y + cell * (L - a) / (e - a)] };
+      S[k].forEach(s => { const p = P[s[0]], q = P[s[1]]; d += `M${p[0].toFixed(1)} ${p[1].toFixed(1)}L${q[0].toFixed(1)} ${q[1].toFixed(1)}`; });
+    }
+    out.push(d);
+  }
+  return out;
+}
+
+/* route map on the ride card */
+(function () {
+  const svg = document.getElementById("card-map");
+  const g = el("g", { stroke: "var(--contour)", fill: "none", "stroke-linecap": "round" }, svg);
+  const f = (x, y) => hill(x, y, 420, 130, 230, 150, 1) + hill(x, y, 120, 330, 160, 120, .55) + .04 * Math.sin(x / 47) * Math.cos(y / 39);
+  isolines(600, 340, 5, f, .07, .07).forEach((d, i) => {
+    const major = (i + 1) % 5 === 0;
+    el("path", { d, "stroke-width": major ? 1.3 : .7, opacity: major ? .7 : .45 }, g);
+  });
+  const pts = [[70, 270], [130, 250], [170, 205], [230, 190], [270, 140], [330, 110], [400, 85], [470, 105], [520, 160], [500, 220], [430, 250], [350, 265], [260, 280], [170, 290], [70, 270]];
+  const grades = [0, 0, 2, 3, 3, 2, 3, 0, 0, 3, 2, 0, 0, 0];
+  pts.slice(1).forEach((p, i) => line(svg, pts[i][0], pts[i][1], p[0], p[1], grades[i], 6));
+  el("circle", { cx: 70, cy: 270, r: 8, fill: "var(--casing)", stroke: "var(--ink)", "stroke-width": 3 }, svg);
+  el("circle", { cx: 400, cy: 85, r: 6, fill: "var(--accent)", stroke: "var(--casing)", "stroke-width": 2 }, svg);
+})();
+
+document.getElementById("strava").textContent = stravaText("gritmeter");
+
+
+/* theme toggle */
+document.querySelectorAll(".theme button").forEach(b => b.addEventListener("click", () => {
+  if (b.dataset.t) document.documentElement.dataset.theme = b.dataset.t; else delete document.documentElement.dataset.theme;
+  document.querySelectorAll(".theme button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  drawTopo();
+}));
+
+/* hero contours: isolines of one height field (marching squares), so they never cross */
+const cv = document.getElementById("topo");
+function drawTopo() {
+  const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1, w = r.width, h = r.height;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const c = cv.getContext("2d"); c.scale(dpr, dpr); c.clearRect(0, 0, w, h);
+  c.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--contour").trim();
+  c.lineCap = c.lineJoin = "round";
+  const f = (x, y) => hill(x, y, w * .8, h * .28, 300, 210, 1) + hill(x, y, w * .56, h * 1.08, 260, 200, .8)
+    + hill(x, y, w * .97, h * .9, 160, 140, .45) + .05 * Math.sin(x / 83 + y / 140) * Math.cos(y / 61 - x / 230);
+  isolines(w, h, 6, f, 0.06, 0.06).forEach((d, i) => {
+    const major = (i + 1) % 5 === 0;
+    c.lineWidth = major ? 1.3 : .7; c.globalAlpha = major ? .6 : .38;
+    c.stroke(new Path2D(d));
+  });
+}
+drawTopo();
+addEventListener("resize", drawTopo);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawTopo);
+</script>
