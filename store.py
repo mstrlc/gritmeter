@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS athletes (
 CREATE TABLE IF NOT EXISTS jobs (
     activity_id INTEGER PRIMARY KEY,   -- dedupe: Strava retries webhooks, catch-up re-lists activities
     athlete_id INTEGER NOT NULL,
-    status TEXT NOT NULL,              -- queued | done | rated | dryrun | removed | skipped | failed
+    status TEXT NOT NULL,              -- queued | mapping | done | rated | dryrun | removed | skipped | failed
     attempts INTEGER NOT NULL DEFAULT 0,
     next_try REAL NOT NULL,
     detail TEXT,                       -- skip reason, "written"/"unchanged", or last error
@@ -187,6 +187,19 @@ def finish(activity_id, status, detail=None, result=None, name=None, start_date=
                       sport_type = COALESCE(?, sport_type) WHERE activity_id = ?""",
                  (status, detail, time.time(), verify_at, status, json.dumps(result) if result else None, name,
                   start_date, sport_type, activity_id))
+
+
+def wait_for_map(activity_id, name=None, start_date=None, sport_type=None):
+    """Park a ride in a new area while its map tiles are fetched; map_ready() queues it again."""
+    db().execute("""UPDATE jobs SET status = 'mapping', detail = 'new area', updated = ?, name = COALESCE(?, name),
+                      start_date = COALESCE(?, start_date), sport_type = COALESCE(?, sport_type)
+                    WHERE activity_id = ?""", (time.time(), name, start_date, sport_type, activity_id))
+
+
+def map_ready(activity_id):
+    """The ride's map tiles are cached: rate it now."""
+    db().execute("UPDATE jobs SET status = 'queued', next_try = ?, updated = ? WHERE activity_id = ? AND status = 'mapping'",
+                 (time.time(), time.time(), activity_id))
 
 
 def next_verify():

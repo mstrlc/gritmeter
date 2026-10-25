@@ -182,13 +182,14 @@ def recent_activity_ids(token, after):
 
 
 def process(activity_id, token, write=True, auto_write=True, skip_private=False, action=None, write_types=None,
-            skip_commute=False):
+            skip_commute=False, map_wait=False):
     """Rate one activity and put our block in its description, following the rider's settings.
 
     write=False is a test run (never PUTs). action is the rider's explicit request: "write" (ignore auto_write,
     skip_private and skip_commute), "remove" (take our block out) or "rate" (rate only: past rides). write_types limits automatic
     writing to those sport_types (None = all rides). Returns a dict: status ("done", "rated", "dryrun", "removed",
     "skipped"), detail, result (rate() output or None), name, start_date, sport_type. About 4 API calls per written ride.
+    map_wait=True returns status "mapping" with the uncached "tiles" instead of fetching them from Overpass inline.
     """
     act = request("GET", f"{API}/activities/{activity_id}", token)
     out = {"name": act.get("name"), "start_date": act.get("start_date_local"),
@@ -207,6 +208,8 @@ def process(activity_id, token, write=True, auto_write=True, skip_private=False,
     points = fetch_points(activity_id, token)
     if not points:
         return out | {"status": "skipped", "detail": "no GPS stream"}
+    if map_wait and (missing := rr.sm.missing_tiles(points)):
+        return out | {"status": "mapping", "detail": "new area", "tiles": missing}
     r = rr.rate(points)
     if r["km"] < MIN_KM:
         return out | {"status": "skipped", "detail": "too short"}

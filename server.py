@@ -24,6 +24,7 @@ import hashlib
 import hmac
 import json
 import os
+import queue
 import re
 import secrets
 import sys
@@ -59,6 +60,7 @@ STRAVA_ASSETS = {p.name for p in STRAVA_ASSETS_DIR.glob("*.svg")}
 
 wake = threading.Event()   # set when work is queued so the worker starts at once
 oauth_states = {}          # state -> created time (single process, so memory is enough)
+maps = queue.Queue()       # (job, tiles) for rides in areas with no cached map data yet
 
 
 def log(msg):
@@ -319,20 +321,51 @@ def run_job(job, write):
     try:
         p = strava.process(act, strava.access_token(aid), write, bool(athlete["auto_write"]),
                            bool(athlete["skip_private"]), job["action"], store.sport_types(athlete),
-                           bool(athlete["skip_commute"]))
+                           bool(athlete["skip_commute"]), map_wait=True)
     except strava.RateLimited:
         raise
     except Exception as e:
-        delay = min(60 * 4 ** job["attempts"], 6 * 3600)
-        store.retry(act, f"{type(e).__name__}: {e}", delay, MAX_ATTEMPTS)
-        log(f"{act}: attempt {job['attempts'] + 1} failed ({e}), retry in {delay // 60} min")
-        if not isinstance(e, RuntimeError):
-            traceback.print_exc()
-        return
+        return failed(job, e)
+    if p["status"] == "mapping":
+        store.wait_for_map(act, p["name"], p["start_date"], p["sport_type"])
+        maps.put((job, p["tiles"]))
+        return log(f"{act}: new area, fetching {len(p['tiles'])} map tiles")
     verify_at = time.time() + VERIFY_AFTER if p["detail"] == "written" else None
     store.finish(act, p["status"], p["detail"], p["result"], p["name"], p["start_date"], verify_at, p["sport_type"])
     score = f" score {p['result']['score']}" if p["result"] else ""
     log(f"{act}: {p['status']} ({p['detail']}){score}")
+
+
+def failed(job, e):
+    """Requeue a job after an error, backing off (1 min, 4, 16, ... up to 6 h) until MAX_ATTEMPTS."""
+    act = job["activity_id"]
+    delay = min(60 * 4 ** job["attempts"], 6 * 3600)
+    store.retry(act, f"{type(e).__name__}: {e}", delay, MAX_ATTEMPTS)
+    log(f"{act}: attempt {job['attempts'] + 1} failed ({e}), retry in {delay // 60} min")
+    if not isinstance(e, RuntimeError):
+        traceback.print_exc()
+
+
+def map_fetcher():
+    """Fetch map tiles for rides in new areas, one tile at a time (Overpass), so the worker keeps rating rides
+    elsewhere. Every tile is tried before giving up, so each retry of the ride only has the failed ones left."""
+    while True:
+        job, tiles = maps.get()
+        try:
+            bad = []
+            for t in tiles:
+                try:
+                    store.sm.fetch_tile(*t)
+                except Exception as e:
+                    bad.append(e)
+            if bad:
+                failed(job, RuntimeError(f"map data for {len(bad)} of {len(tiles)} tiles failed: {bad[0]}"))
+            else:
+                store.map_ready(job["activity_id"])
+                log(f"{job['activity_id']}: map tiles cached, rating")
+                wake.set()
+        except Exception:
+            traceback.print_exc()
 
 
 def run_verify(job):
@@ -384,7 +417,10 @@ def main():
     write = "--dry-run" not in sys.argv
     web.WRITING = write
     httpd = ThreadingHTTPServer((HOST, PORT), Handler)  # bind first: if the port is taken, no worker starts
+    if n := store.requeue("mapping"):  # their tile fetches were in memory only
+        log(f"requeued {n} rides waiting for map data")
     threading.Thread(target=worker, args=(write,), daemon=True, name="worker").start()
+    threading.Thread(target=map_fetcher, daemon=True, name="maps").start()
     log(f"listening on {HOST}:{PORT}, public URL {public_url()}{'' if write else ', DRY RUN (no descriptions written)'}")
     httpd.serve_forever()
 

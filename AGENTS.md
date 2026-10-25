@@ -62,6 +62,8 @@ Two targets, deployed separately; the `/deploy` skill (`.claude/skills/deploy/`)
 - Surface classification is tuned for Czech OSM tagging (e.g. bare `surface=paved` is treated as asphalt; untagged roads
   are inferred from highway class / tracktype). Keep that inference visible via the "unknown" share rather than hiding it.
 - Tiles are 0.02° x 0.03° (~2.2 km). Always write empty tiles to the cache so a miss is never re-fetched.
+  Never cache an Overpass answer that carries a `remark` (timed out / out of memory: partial or empty). In the server,
+  rides needing uncached tiles go to status `mapping` and the `maps` thread fetches them, never the worker itself.
 - Never overwrite a user's Strava description; append after a marker and replace only our own block, in place.
   Other apps write the same field (last write wins): re-read right before any PUT, never reuse an older read.
 - OSM-derived output needs the "© OpenStreetMap contributors" credit; Strava UI needs "Powered by Strava".

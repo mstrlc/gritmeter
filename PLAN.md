@@ -81,7 +81,8 @@ and most tiles would never be read.
 | 3 | Replace JSON tile files with one SQLite/GeoPackage + spatial index |
 | 4 | Self-hosted Overpass/PostGIS for Europe/NA — only if real users make public Overpass a bottleneck |
 
-Uncovered tiles show as "unknown" until fetched; first ride in a new place is slower.
+A ride touching uncached tiles waits in status `mapping` ("new area" on the rides page) while a separate thread
+fetches them from Overpass one by one, then it is rated; other rides keep going meanwhile.
 
 ## Build order
 1. Package the pipeline as `analyse(points) -> {pct, score, label}`; remove CZ-specific assumptions; make the tile source pluggable.

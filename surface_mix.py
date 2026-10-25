@@ -231,8 +231,15 @@ def fetch_tile(ty, tx):
         for el in data.get("elements", [])
     ]
     OSM_DIR.mkdir(parents=True, exist_ok=True)
-    cache.write_text(json.dumps(ways))
+    tmp = cache.with_suffix(".tmp")  # write then rename: another thread may read the tile meanwhile
+    tmp.write_text(json.dumps(ways))
+    tmp.replace(cache)
     return ways
+
+
+def missing_tiles(points):
+    """Tiles the track needs that aren't cached yet: a ride in a new area."""
+    return sorted(t for t in tiles_for(points) if not (OSM_DIR / f"{t[0]}_{t[1]}.json").exists())
 
 
 def prefetch(all_tiles, workers=2):

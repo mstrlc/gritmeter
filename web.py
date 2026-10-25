@@ -324,6 +324,8 @@ def _state_live(job, csrf):
     if s == "queued":
         what = {"write": "adding the summary", "remove": "removing the summary"}.get(job["action"], "in the queue")
         return f"{dot}{what}…", ""
+    if s == "mapping":
+        return f"{dot}new area: fetching map data, this can take a few minutes…", ""
     if s == "done":
         return (f'{icon("check")}in the description',
                 _action(aid, "remove", "minus", "remove", csrf))
@@ -375,7 +377,7 @@ def ride(job, csrf):
     status, button = _state(job, csrf)
     kind = {"road": "road", "mostly road": "road", "mixed": "mixed"}.get(r["label"], "gravel") if r else ""
     added = "added" if job["status"] == "done" else "not-added"
-    queued = " data-queued" if job["status"] == "queued" else ""
+    queued = " data-queued" if job["status"] in ("queued", "mapping") else ""
     return (f'<li class="ride" id="ride-{aid}"{queued} data-kind="{kind}" data-added="{added}" data-type="{escape(job.get("sport_type") or "")}" data-date="{(job["start_date"] or "")[:10]}"><div><p class="meta mono muted tnum">{meta}</p><h3>{name}</h3></div>{score}'
             f'{_mix(r["pct"]) if r else ""}'
             f'<div class="foot"><p class="status">{status}</p><div class="actions">{button}{_strava_link(aid)}</div></div></li>')
@@ -524,7 +526,7 @@ def activities_page(athlete, jobs, csrf, code=""):
                 f'<button class="btn line sm" type="submit">{icon("history")}rate my last 14 days</button></form></div>')
     # while anything is queued, reload every few seconds (keeps the scroll position) so its status updates
     refresh = ('<script>setTimeout(function () { location.reload(); }, 4000);</script>'
-               if any(j["status"] == "queued" for j in jobs) else "")
+               if any(j["status"] in ("queued", "mapping") for j in jobs) else "")
     body = (f"{refresh}<h1>your rides</h1>{summary}{notice(code)}{warn}{stats}{filters}"
             f"{listing}{_skipped(skipped)}{backfill}")
     return shell("rides", body + (FILTER_JS if filters else "") + RIDE_JS, athlete, csrf, current="/")
