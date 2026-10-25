@@ -68,4 +68,7 @@ No test suite yet. Validate classifier/snapping changes by re-running `ride_rati
 - Runs on a Raspberry Pi 4 (`pi4.local`) in Docker (`Dockerfile`, `compose.yaml`, `deploy.sh`): keep runtime memory
   small and the image stdlib-only; do heavy `.pbf` processing on the Mac. `data/` and `.env` live on the Pi, never in
   the image. The app starts in `--dry-run` unless the Pi's `.env` sets `SERVER_FLAGS=` (empty).
+  `firewall.sh` (run at boot by `gritmeter-firewall.service`, installed once on the Pi) keeps the containers on the
+  `br-gritmeter` bridge off the Pi, the LAN and the tailnet: internet only, so they use public DNS (`dns:` in
+  `compose.yaml`). Re-run `sudo /opt/gritmeter/firewall.sh` after editing it.
 - Plain scripts, standard library where possible, small functions with short docstrings; match the existing style.

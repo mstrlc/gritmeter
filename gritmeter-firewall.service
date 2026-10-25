@@ -1,0 +1,16 @@
+# Applies firewall.sh before Docker starts the gritmeter containers. Install once on the Pi:
+#   sudo cp /opt/gritmeter/gritmeter-firewall.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now gritmeter-firewall
+[Unit]
+Description=Keep the gritmeter containers off the LAN, the tailnet and the host
+Before=docker.service
+Wants=network-pre.target
+After=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh /opt/gritmeter/firewall.sh
+
+[Install]
+WantedBy=multi-user.target docker.service

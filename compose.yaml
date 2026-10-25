@@ -1,5 +1,7 @@
 # my.gritmeter.app on the Pi: the app plus a Cloudflare Tunnel, in their own network with no published ports,
 # so the tunnel is the only way in. Lives in /opt/gritmeter, separate from the Pi's other compose project.
+# The network's bridge is named br-gritmeter so firewall.sh can keep both containers off the LAN, the tailnet and the
+# Pi itself (internet only); DNS therefore goes to public resolvers, not the Pi's Tailscale one.
 #
 # .env (next to this file, mode 600) holds STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_VERIFY_TOKEN, SESSION_SECRET,
 # PUBLIC_URL and TUNNEL_TOKEN. The app starts in --dry-run; put `SERVER_FLAGS=` (empty) in .env to write descriptions.
@@ -11,6 +13,7 @@ services:
     user: "1000:1000"   # matyas on the Pi, who owns data/ and rsyncs tiles into it
     volumes:
       - ./data:/app/data
+    dns: [1.1.1.1, 9.9.9.9]
     restart: unless-stopped
 
   cloudflared:
@@ -20,6 +23,12 @@ services:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN}
     volumes:
       - ./cloudflared.yml:/etc/cloudflared/config.yml:ro
+    dns: [1.1.1.1, 9.9.9.9]
     depends_on:
       - gritmeter
     restart: unless-stopped
+
+networks:
+  default:
+    driver_opts:
+      com.docker.network.bridge.name: br-gritmeter
