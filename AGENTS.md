@@ -49,7 +49,8 @@ No test suite yet. Validate classifier/snapping changes by re-running `ride_rati
 - OSM-derived output needs the "© OpenStreetMap contributors" credit; Strava UI needs "Powered by Strava".
 - Product name is **gritmeter** (domain gritmeter.app). Follow `design/identity.html` for any UI:
   Epilogue (900 headlines, 400 body) + DM Mono only for what gritmeter writes and data values, never for UI labels;
-  paper/ink neutrals; one accent, rough red `#c42e2a` (dark `#ee5a4e`); light + dark + auto themes. Corners: rounded
+  paper/ink neutrals; one accent, rough red `#c42e2a` (dark `#ee5a4e`); light and dark follow the system
+  theme, no switcher (decided 2026-10-25). Corners: rounded
   buttons, cards and segmented controls (8/12/18 px; `--r-sm`/`--r`/`--r-lg` in `web.py`), on the landing page and in
   my.gritmeter.app alike (decided 2026-10-25, replacing the identity sheet's square corners).
 - Copy is lowercase except proper nouns (Strava, OpenStreetMap, GPS, place names); in running text write

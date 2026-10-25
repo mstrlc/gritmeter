@@ -34,16 +34,11 @@ CSS = """
   --gutter: clamp(16px, 5vw, 64px);
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+@media (prefers-color-scheme: dark) { :root {
   --paper: #0f1214; --paper-2: #1b2023; --card: #161a1d; --raised: #2c3337; --ink: #e7e9e2; --ink-2: #99a09a; --rule: #2a3034; --accent: #ee5a4e;
   --shadow: 0 1px 2px rgba(0, 0, 0, .3); color-scheme: dark;
   --g0: #b4bac1; --g1: #8ea2c2; --g2: #e3c157; --g3: #f08d3d; --g4: #b8794a; --g5: #ee5a4e; --gu: #4c5256;
 } }
-:root[data-theme="dark"] {
-  --paper: #0f1214; --paper-2: #1b2023; --card: #161a1d; --raised: #2c3337; --ink: #e7e9e2; --ink-2: #99a09a; --rule: #2a3034; --accent: #ee5a4e;
-  --shadow: 0 1px 2px rgba(0, 0, 0, .3); color-scheme: dark;
-  --g0: #b4bac1; --g1: #8ea2c2; --g2: #e3c157; --g3: #f08d3d; --g4: #b8794a; --g5: #ee5a4e; --gu: #4c5256;
-}
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.0625rem/1.6 var(--display); -webkit-font-smoothing: antialiased; }
 p, h1, h2, h3, dl, dd, form { margin: 0; }
@@ -64,19 +59,16 @@ a { color: inherit; text-underline-offset: 3px; }
 .tools { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .top nav + .tools { margin-left: 0; }
 /* segmented controls: a soft track, the current option raised on it */
-.tabs, .theme { display: flex; gap: 2px; padding: 3px; background: var(--paper-2); border-radius: var(--r); }
-.tabs a, .theme button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 34px; border-radius: var(--r-sm);
+.tabs { display: flex; gap: 2px; padding: 3px; background: var(--paper-2); border-radius: var(--r); }
+.tabs a { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 34px; border-radius: var(--r-sm);
   color: var(--ink-2); font: inherit; font-weight: 700; font-size: .9375rem; text-decoration: none; border: 0; background: none; cursor: pointer;
-  transition: background .15s, color .15s; }
-.tabs a { padding: 0 14px; }
-.theme button { width: 34px; padding: 0; }
-.theme svg { width: 16px; height: 16px; }
-.tabs a:hover, .theme button:hover { color: var(--ink); }
-.tabs a[aria-current="page"], .theme button[aria-pressed="true"] { background: var(--raised); color: var(--ink); box-shadow: var(--shadow); }
+  transition: background .15s, color .15s; padding: 0 14px; }
+.tabs a:hover { color: var(--ink); }
+.tabs a[aria-current="page"] { background: var(--raised); color: var(--ink); box-shadow: var(--shadow); }
 .linkish { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 12px; border-radius: var(--r); background: none; border: 0;
   font: inherit; font-weight: 700; font-size: .9375rem; color: var(--ink-2); cursor: pointer; }
 .linkish:hover { background: var(--paper-2); color: var(--ink); }
-/* phones: logo, sign out and theme on one row; the page tabs full width below */
+/* phones: logo and sign out on one row; the page tabs full width below */
 @media (max-width: 560px) {
   .top .wrap { gap: 10px; padding-block: 10px; min-height: 0; }
   .top .wrap > .tools { margin-left: auto; }
@@ -94,17 +86,14 @@ a { color: inherit; text-underline-offset: 3px; }
 .btn.line { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--rule); }
 .btn.line:hover { background: var(--paper-2); }
 .btn:hover { transform: translateY(-1px); }
-@media (prefers-reduced-motion: reduce) { .btn, .tabs a, .theme button { transition: none; } .btn:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .btn, .tabs a { transition: none; } .btn:hover { transform: none; } }
 /* official Strava assets (site/strava/, unmodified): the button links straight to Strava's authorize URL */
 .connect { display: inline-block; line-height: 0; }
 .connect img { width: 237px; height: 48px; }
 .pwrd { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .pwrd img { height: 14px; width: auto; }
 .pwrd .on-dark { display: none; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .pwrd .on-light { display: none; }
-  :root:not([data-theme="light"]) .pwrd .on-dark { display: inline; } }
-:root[data-theme="dark"] .pwrd .on-light { display: none; }
-:root[data-theme="dark"] .pwrd .on-dark { display: inline; }
+@media (prefers-color-scheme: dark) { .pwrd .on-light { display: none; } .pwrd .on-dark { display: inline; } }
 
 main { padding-block: clamp(28px, 5vw, 56px) clamp(56px, 8vw, 96px); }
 h1 { font-weight: 900; letter-spacing: -.05em; line-height: .95; font-size: clamp(2.2rem, 6vw, 3.25rem); }
@@ -203,13 +192,7 @@ GM = ('<span class="gm"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="4" 
       'width="24" height="12"/><rect x="36" y="26" width="24" height="12"/><circle cx="10" cy="52" r="6"/><circle cx="32" '
       'cy="52" r="6"/><circle cx="54" cy="52" r="6"/></svg>gritmeter</span>')
 
-THEME_SWITCH = """<div class="theme" role="group" aria-label="Colour theme">
-<button type="button" data-t="" aria-pressed="true" aria-label="Auto theme" title="auto: follow your device"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></button>
-<button type="button" data-t="light" aria-pressed="false" aria-label="Light theme" title="light"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg></button>
-<button type="button" data-t="dark" aria-pressed="false" aria-label="Dark theme" title="dark"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
-</div>"""
-
-# 16px line icons in the theme switch's style (1.8 stroke, round caps), drawn in currentColor
+# 16px line icons (1.8 stroke, round caps), drawn in currentColor
 ICONS = {
     "plus": '<path d="M12 5v14M5 12h14"/>',
     "minus": '<path d="M5 12h14"/>',
@@ -229,20 +212,6 @@ def icon(name):
     return (f'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
             f'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{ICONS[name]}</svg>')
 
-
-THEME_JS = """<script>
-(function () {
-  var root = document.documentElement, btns = document.querySelectorAll(".theme button");
-  function set(t) {
-    if (t) root.dataset.theme = t; else delete root.dataset.theme;
-    btns.forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.t === t); });
-    try { localStorage.setItem("theme", t); } catch (e) {}
-  }
-  btns.forEach(function (b) { b.addEventListener("click", function () { set(b.dataset.t); }); });
-  var saved = ""; try { saved = localStorage.getItem("theme") || ""; } catch (e) {}
-  set(saved);
-})();
-</script>"""
 
 # flash messages, picked by a fixed code in the redirect URL (never echo free text from the query string)
 NOTICES = {
@@ -285,14 +254,13 @@ def shell(title, body, athlete=None, csrf="", current=""):
 <body>
 <header class="top"><div class="wrap">
 <a class="logo" href="/" aria-label="gritmeter home">{MARK}gritmeter</a>
-{nav}<div class="tools">{signout}{THEME_SWITCH}</div>
+{nav}<div class="tools">{signout}</div>
 </div></header>
 <main><div class="wrap">{body}</div></main>
 <footer><div class="wrap">
 <p>map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
 <p class="pwrd"><img class="on-light" src="/strava/api_logo_pwrdBy_strava_horiz_black.svg" alt="Powered by Strava" width="138" height="14"><img class="on-dark" src="/strava/api_logo_pwrdBy_strava_horiz_white.svg" alt="Powered by Strava" width="138" height="14"><span>{GM} is not affiliated with or endorsed by Strava.</span></p>
 </div></footer>
-{THEME_JS}
 </body>
 </html>"""
 
