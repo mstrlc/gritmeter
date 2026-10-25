@@ -20,6 +20,8 @@ GRADES = {
 RIDE_TYPE_NAMES = {"GravelRide": "gravel rides", "MountainBikeRide": "mountain bike rides", "Ride": "road and other rides",
                    "EBikeRide": "e-bike rides", "EMountainBikeRide": "e-mountain bike rides"}
 
+WRITING = True   # False while server.py runs with --dry-run: no ride buttons, since none of them could write
+
 CSS = """
 /* tokens from design/identity.html; the app softens them with rounded corners and card surfaces */
 :root {
@@ -341,7 +343,12 @@ def _skip_reason(detail):
 
 
 def _state(job, csrf):
-    """(status text, action button) for a ride."""
+    """(status text, action button) for a ride; no button while descriptions aren't being written."""
+    text, button = _state_live(job, csrf)
+    return (text, button) if WRITING else (text, "")
+
+
+def _state_live(job, csrf):
     s, d, aid = job["status"], job["detail"], job["activity_id"]
     dot = '<span class="dot"></span>'
     if s == "queued":
@@ -356,7 +363,8 @@ def _state(job, csrf):
             why[d] = RIDE_TYPE_NAMES.get(d.split()[-1], "this ride type") + " are off"
         return f"{dot}not added: {why.get(d, d)}", _action(aid, "add", "plus", "add to description", csrf, line=False)
     if s == "dryrun":
-        return f"{dot}rated in a test run", _action(aid, "add", "plus", "add to description", csrf, line=False)
+        text = "gritmeter isn't writing to Strava yet" if not WRITING else "rated before gritmeter went live"
+        return f"{dot}not added: {text}", _action(aid, "add", "plus", "add to description", csrf, line=False)
     if s == "removed":
         return f"{dot}removed from the description", _action(aid, "add", "plus", "add again", csrf)
     if s == "failed":

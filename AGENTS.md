@@ -61,7 +61,8 @@ No test suite yet. Validate classifier/snapping changes by re-running `ride_rati
   request logging because query strings carry OAuth codes). `.env` keys: STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET,
   STRAVA_VERIFY_TOKEN, SESSION_SECRET; server also reads HOST, PORT, PUBLIC_URL.
 - Starting server.py without `--dry-run` writes to real descriptions of rides uploaded after the athlete connected
-  (catch-up covers the last 3 days). Rides rated in a test run are never written unless the rider clicks add.
+  (catch-up covers the last 3 days). Rides rated in dry-run (status `dryrun`) are never written
+  unless the rider clicks add once the server is live; in dry-run the rides page shows no per-ride buttons.
 - Strava ids differ from Garmin ids: ride `24641046424` in `data/rides.json` is Strava `20490259741`.
 - Runs on a Raspberry Pi 4 (`pi4.local`) in Docker (`Dockerfile`, `compose.yaml`, `deploy.sh`): keep runtime memory
   small and the image stdlib-only; do heavy `.pbf` processing on the Mac. `data/` and `.env` live on the Pi, never in
