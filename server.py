@@ -313,7 +313,8 @@ def run_job(job, write):
         return store.finish(act, "failed", "athlete not connected")
     try:
         p = strava.process(act, strava.access_token(aid), write, bool(athlete["auto_write"]),
-                           bool(athlete["skip_private"]), job["action"], store.sport_types(athlete))
+                           bool(athlete["skip_private"]), job["action"], store.sport_types(athlete),
+                           bool(athlete["skip_commute"]))
     except strava.RateLimited:
         raise
     except Exception as e:

@@ -48,9 +48,10 @@ MIGRATIONS = [
     ("athletes", "sport_types", "TEXT"),                          # comma list of ride types to write; NULL = all
     ("jobs", "sport_type", "TEXT"),                               # Strava sport_type, for the rides filter
     ("jobs", "verify_at", "REAL"),                                # when to check our written block is still there
+    ("athletes", "skip_commute", "INTEGER NOT NULL DEFAULT 0"),  # rate rides marked commute but leave them unwritten
 ]
 
-SETTINGS = ("auto_write", "skip_private")
+SETTINGS = ("auto_write", "skip_private", "skip_commute")
 
 
 def db():
@@ -83,10 +84,13 @@ def _import_json_tokens(conn):
 # ---------------------------------------------------------------- athletes
 
 def save_athlete(athlete_id, firstname, t, conn=None):
-    """Insert or update an athlete's tokens (t: access_token, refresh_token, expires_at[, scope])."""
+    """Insert or update an athlete's tokens (t: access_token, refresh_token, expires_at[, scope]).
+    A new athlete starts with every writing setting on (auto-add, leave private rides and commutes alone);
+    a returning one keeps theirs."""
     (conn or db()).execute(
-        """INSERT INTO athletes (id, firstname, access_token, refresh_token, expires_at, scope, connected_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?)
+        """INSERT INTO athletes (id, firstname, access_token, refresh_token, expires_at, scope, connected_at,
+             auto_write, skip_private, skip_commute)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, 1)
            ON CONFLICT (id) DO UPDATE SET firstname = COALESCE(excluded.firstname, firstname),
              access_token = excluded.access_token, refresh_token = excluded.refresh_token,
              expires_at = excluded.expires_at, scope = COALESCE(excluded.scope, scope)""",

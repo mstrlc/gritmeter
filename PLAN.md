@@ -99,7 +99,7 @@ Uncovered tiles show as "unknown" until fetched; first ride in a new place is sl
    - Rides page: every activity gritmeter saw, newest first, with score, rating, grade bar + text, status, View on
      Strava, and per-ride actions (add to description / remove from description / try again). "rate my last 14 days"
      rates past rides without writing (status `rated`, "past ride").
-   - Settings: auto-add on/off; leave "only you" rides alone. Disconnect revokes on Strava and deletes all our data.
+   - Settings: auto-add on/off; leave "only you" rides alone; leave commutes (Strava's commute flag) alone. Disconnect revokes on Strava and deletes all our data.
    - All Strava calls for a ride stay in the worker (rate limits); the pages only queue requests.
    *Status 2026-10-24:* `web.py` + routes written and tested locally in `--dry-run` (sign-in page, rides, settings save,
    sign-out, CSRF/forged-cookie/ownership checks, backfill of 18 activities, phone width, both themes). Disconnect not

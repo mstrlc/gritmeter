@@ -361,7 +361,8 @@ def _state_live(job, csrf):
         return ('<span class="dot on"></span>in the description',
                 _action(aid, "remove", "minus", "remove", csrf))
     if s == "rated":
-        why = {"auto-add off": ": auto-add is off", "private ride": ": private ride", "past ride": ""}  # past: own section
+        why = {"auto-add off": ": auto-add is off", "private ride": ": private ride", "commute": ": commute",
+               "past ride": ""}  # past: own section
         if (d or "").startswith("type off "):
             why[d] = ": " + RIDE_TYPE_NAMES.get(d.split()[-1], "this ride type") + " are off"
         return f"{dot}not added{why.get(d, ': ' + (d or ''))}", _action(aid, "add", "plus", "add to description", csrf, line=False)
@@ -560,6 +561,9 @@ def settings_page(athlete, csrf, code=""):
 <label class="check"><input type="checkbox" name="skip_private" value="1"{checked("skip_private")}>
 <b>leave rides that only you can see alone</b>
 <span>they are still rated here.</span></label>
+<label class="check"><input type="checkbox" name="skip_commute" value="1"{checked("skip_commute")}>
+<b>leave commutes alone</b>
+<span>rides marked as commute on Strava. they are still rated here.</span></label>
 </div>
 <div class="group">
 <h2>which rides</h2>

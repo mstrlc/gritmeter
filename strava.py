@@ -180,11 +180,12 @@ def recent_activity_ids(token, after):
     return [a["id"] for a in request("GET", f"{API}/athlete/activities?after={after}&per_page=50", token)]
 
 
-def process(activity_id, token, write=True, auto_write=True, skip_private=False, action=None, write_types=None):
+def process(activity_id, token, write=True, auto_write=True, skip_private=False, action=None, write_types=None,
+            skip_commute=False):
     """Rate one activity and put our block in its description, following the rider's settings.
 
-    write=False is a test run (never PUTs). action is the rider's explicit request: "write" (ignore auto_write and
-    skip_private), "remove" (take our block out) or "rate" (rate only: past rides). write_types limits automatic
+    write=False is a test run (never PUTs). action is the rider's explicit request: "write" (ignore auto_write,
+    skip_private and skip_commute), "remove" (take our block out) or "rate" (rate only: past rides). write_types limits automatic
     writing to those sport_types (None = all rides). Returns a dict: status ("done", "rated", "dryrun", "removed",
     "skipped"), detail, result (rate() output or None), name, start_date, sport_type. About 4 API calls per written ride.
     """
@@ -219,6 +220,8 @@ def process(activity_id, token, write=True, auto_write=True, skip_private=False,
             return out | {"status": "rated", "detail": "auto-add off"}
         if skip_private and act.get("visibility") == "only_me":
             return out | {"status": "rated", "detail": "private ride"}
+        if skip_commute and act.get("commute"):
+            return out | {"status": "rated", "detail": "commute"}
         if write_types is not None and act["sport_type"] not in write_types:
             return out | {"status": "rated", "detail": f"type off {act['sport_type']}"}
     return out | {"status": "done", "detail": write_block(activity_id, token, r)}
