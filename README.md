@@ -67,7 +67,7 @@ Website:
 - `wrangler.jsonc` + `src/worker.js`: Cloudflare Workers config. The worker redirects www.gritmeter.app to
   gritmeter.app and serves everything else from `site/`.
 
-The site deploys to Cloudflare Workers on every push to `main` (`npx wrangler deploy`, no build step).
+The site deploys to Cloudflare Workers with `npx wrangler deploy` (no build step); pushing to `main` does not deploy it.
 
 my.gritmeter.app (`server.py`) runs in Docker on a Raspberry Pi, reachable only through a Cloudflare Tunnel:
 

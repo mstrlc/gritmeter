@@ -17,6 +17,7 @@ GPS points -> resample every 20 m -> fetch nearby OSM ways (cached tiles) -> sna
 | `server.py` | Backend for my.gritmeter.app: routes, signed-cookie sessions + CSRF, webhook (`/webhook`), worker thread draining the queue, catch-up pass every 6 h. |
 | `web.py` | Server-rendered HTML (stdlib) for my.gritmeter.app: sign-in, rides list, settings. Styles copy `design/identity.html` tokens. |
 | `site/index.html` | Landing page (plain HTML/CSS, no build step) + `site/favicon.svg`. |
+| `wrangler.jsonc`, `src/worker.js` | Cloudflare Workers config for gritmeter.app: serves `site/`, redirects www to the apex. |
 | `design/identity.html` | Visual identity sheet ("gritmeter"): tokens, type, logo, surface colours, components. Published as a claude.ai artifact. |
 | `extract_osm.py` | Fills `data/osm/` tiles from Geofabrik `.osm.pbf` extracts (needs pyosmium, in `.venv`). |
 
@@ -34,9 +35,26 @@ python3 strava.py rate <activity_id> [--write]   # rate from streams; --write up
 python3 server.py [--dry-run]     # my.gritmeter.app on 127.0.0.1:8722; --dry-run rates but never writes descriptions
 python3 strava.py subscribe <url>/webhook        # register the webhook once the server is reachable publicly
 ./deploy.sh [--osm]               # rsync code (+ data/osm/) to pi4.local:/opt/gritmeter, docker compose up --build
+npx wrangler deploy               # publish site/ (landing page) to Cloudflare Workers at gritmeter.app
 ```
 No test suite yet. Validate classifier/snapping changes by re-running `ride_rating.py` and comparing against
 `data/ratings.txt`.
+
+## Deploying
+Two targets, deployed separately; the `/deploy` skill (`.claude/skills/deploy/`) has the full steps.
+
+| Target | Serves | Deploy | Changed files that need it |
+|---|---|---|---|
+| web | gritmeter.app (Cloudflare Workers) | `npx wrangler deploy` | `site/**`, `src/worker.js`, `wrangler.jsonc` |
+| Pi | my.gritmeter.app (Docker on `pi4.local`, Cloudflare Tunnel) | `./deploy.sh` (`--osm` for new tiles) | `*.py`, `Dockerfile`, `compose.yaml`, `cloudflared.yml`, `firewall.sh`, `site/strava/` |
+
+- Deploy only when asked, from a clean, committed `main`: `deploy.sh` rsyncs the working tree as it is, and wrangler
+  uploads `site/` as it is. Push is separate; nothing deploys on push.
+- A Pi deploy restarts the live app: if the Pi is not in `--dry-run`, it rates and writes real descriptions as soon as it
+  is back up. Never change `SERVER_FLAGS` in the Pi's `.env` as part of a deploy.
+- After `firewall.sh` changes, also run `ssh pi4.local sudo /opt/gritmeter/firewall.sh` (needs the user's sudo).
+- Verify after deploying: web, `curl -s https://gritmeter.app/` shows the change; Pi, `docker compose ps` lists both
+  containers up and `curl -s https://my.gritmeter.app/health` says `ok`.
 
 ## Conventions and gotchas
 - Input to the analysis is just a list of `(lat, lon)` points. Strava data must come from the **streams API**

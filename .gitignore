@@ -12,5 +12,6 @@ __pycache__/
 # wrangler local cache
 .wrangler/
 
-# local Claude Code config
-.claude/
+# local Claude Code config (project skills are shared)
+.claude/*
+!.claude/skills/
