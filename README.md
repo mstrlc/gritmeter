@@ -69,6 +69,15 @@ Website:
 
 The site deploys to Cloudflare Workers on every push to `main` (`npx wrangler deploy`, no build step).
 
+my.gritmeter.app (`server.py`) runs in Docker on a Raspberry Pi, reachable only through a Cloudflare Tunnel:
+
+- `Dockerfile`: the app on `python:3.12-slim`, standard library only.
+- `compose.yaml`: the app plus `cloudflared`, with no published ports. `data/` is mounted from the host, and secrets
+  come from `.env` next to it.
+- `deploy.sh`: copies the code to the Pi and rebuilds there (`--osm` also copies the OSM tile cache).
+
+The app starts in dry-run (rates rides, writes no descriptions) until the Pi's `.env` sets `SERVER_FLAGS=` (empty).
+
 To view the site locally, open `site/index.html` in a browser, or serve the folder:
 
 ```bash

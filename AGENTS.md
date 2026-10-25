@@ -33,6 +33,7 @@ python3 strava.py auth            # connect an athlete (needs STRAVA_CLIENT_ID/S
 python3 strava.py rate <activity_id> [--write]   # rate from streams; --write updates the description
 python3 server.py [--dry-run]     # my.gritmeter.app on 127.0.0.1:8722; --dry-run rates but never writes descriptions
 python3 strava.py subscribe <url>/webhook        # register the webhook once the server is reachable publicly
+./deploy.sh [--osm]               # rsync code (+ data/osm/) to pi4.local:/opt/gritmeter, docker compose up --build
 ```
 No test suite yet. Validate classifier/snapping changes by re-running `ride_rating.py` and comparing against
 `data/ratings.txt`.
@@ -62,5 +63,7 @@ No test suite yet. Validate classifier/snapping changes by re-running `ride_rati
 - Starting server.py without `--dry-run` writes to real descriptions of rides uploaded after the athlete connected
   (catch-up covers the last 3 days). Rides rated in a test run are never written unless the rider clicks add.
 - Strava ids differ from Garmin ids: ride `24641046424` in `data/rides.json` is Strava `20490259741`.
-- Target hardware may be a Raspberry Pi (3B/4, 64-bit OS): keep runtime memory small; do heavy `.pbf` processing on the Mac.
+- Runs on a Raspberry Pi 4 (`pi4.local`) in Docker (`Dockerfile`, `compose.yaml`, `deploy.sh`): keep runtime memory
+  small and the image stdlib-only; do heavy `.pbf` processing on the Mac. `data/` and `.env` live on the Pi, never in
+  the image. The app starts in `--dry-run` unless the Pi's `.env` sets `SERVER_FLAGS=` (empty).
 - Plain scripts, standard library where possible, small functions with short docstrings; match the existing style.

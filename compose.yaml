@@ -1,0 +1,23 @@
+# my.gritmeter.app on the Pi: the app plus a Cloudflare Tunnel, in their own network with no published ports,
+# so the tunnel is the only way in. Lives in /opt/gritmeter, separate from the Pi's other compose project.
+#
+# .env (next to this file, mode 600) holds STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_VERIFY_TOKEN, SESSION_SECRET,
+# PUBLIC_URL and TUNNEL_TOKEN. The app starts in --dry-run; put `SERVER_FLAGS=` (empty) in .env to write descriptions.
+services:
+  gritmeter:
+    build: .
+    command: python server.py ${SERVER_FLAGS---dry-run}
+    env_file: .env
+    user: "1000:1000"   # matyas on the Pi, who owns data/ and rsyncs tiles into it
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run   # routes my.gritmeter.app -> http://gritmeter:8722 (set in the Cloudflare dashboard)
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - gritmeter
+    restart: unless-stopped
