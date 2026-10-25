@@ -1,0 +1,6 @@
+# Ingress for the `gritmeter` tunnel (locally managed: created with `cloudflared tunnel create gritmeter` and
+# `cloudflared tunnel route dns gritmeter my.gritmeter.app`). The tunnel's run token is TUNNEL_TOKEN in the Pi's .env.
+ingress:
+  - hostname: my.gritmeter.app
+    service: http://gritmeter:8722
+  - service: http_status:404

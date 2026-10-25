@@ -15,9 +15,11 @@ services:
 
   cloudflared:
     image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run   # routes my.gritmeter.app -> http://gritmeter:8722 (set in the Cloudflare dashboard)
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run   # ingress: cloudflared.yml
     environment:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    volumes:
+      - ./cloudflared.yml:/etc/cloudflared/config.yml:ro
     depends_on:
       - gritmeter
     restart: unless-stopped

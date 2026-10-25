@@ -59,11 +59,15 @@ Strava webhook (activity created) -> POST /webhook (200 in <2 s, enqueue only)
 - SQLite (WAL) on SSD/good card; keep storage behind a small interface so Postgres can replace it later.
 - Docker (decided 2026-10-25): the Pi (`pi4.local`, Pi 4 4 GB, Raspberry Pi OS bullseye 64-bit) already runs its other
   services in Docker, so gritmeter is its own compose project in `/opt/gritmeter` (`compose.yaml`: the app on
-  `python:3.12-slim` + `cloudflared` with a tunnel token), with no published ports and not on the Pi's shared proxy
+  `python:3.12-slim` + `cloudflared`), with no published ports and not on the Pi's shared proxy
   network. `deploy.sh` rsyncs the code and rebuilds on the Pi (no registry); `data/` and `.env` stay on the Pi.
   The container runs as uid 1000 (the Pi's login user, who owns `data/`). Starts in `--dry-run` until `.env` sets
   `SERVER_FLAGS=` (empty). Cheaper than a VPS (~€50/yr) since the Pi runs anyway; outages only delay descriptions
   (webhook retries + 3-day catch-up), and moving later is copying one folder.
+- Tunnel (2026-10-25): locally managed tunnel `gritmeter`, made with the `cloudflared` CLI on the Mac (`tunnel create`,
+  `tunnel route dns gritmeter my.gritmeter.app`); ingress lives in `cloudflared.yml` in the repo, and the Pi's `.env`
+  holds only the run token (`cloudflared tunnel token gritmeter`). The account cert (`~/.cloudflared/cert.pem`) stays
+  on the Mac.
 
 ## OSM data strategy: regional + lazy, not Europe/NA at once
 Source sizes (Geofabrik .pbf, approx): Europe ~30 GB, NA ~15 GB, planet ~75 GB; highway-only is far smaller.
@@ -100,9 +104,11 @@ Uncovered tiles show as "unknown" until fetched; first ride in a new place is sl
    *Status 2026-10-24:* `web.py` + routes written and tested locally in `--dry-run` (sign-in page, rides, settings save,
    sign-out, CSRF/forged-cookie/ownership checks, backfill of 18 activities, phone width, both themes). Disconnect not
    exercised against Strava (it would revoke the real authorization).
-   Next: deploy on the Pi (Docker, see Hosting) behind a Cloudflare Tunnel (`my.gritmeter.app` -> `gritmeter:8722`, `PUBLIC_URL` set to it,
-   webhook at `https://my.gritmeter.app/webhook` via `strava.py subscribe`); check Strava accepts the `my.` subdomain as
-   OAuth redirect under the `gritmeter.app` callback domain; the official Connect button (links straight to
+   *Status 2026-10-25:* deployed on the Pi (Docker, see Hosting) in `--dry-run`, reachable at https://my.gritmeter.app
+   through the tunnel; Strava's authorize page accepts the `my.gritmeter.app/callback` redirect (sign-in itself not yet
+   tried there).
+   Next: sign in on the Pi, subscribe the webhook (`https://my.gritmeter.app/webhook` via `strava.py subscribe`), stop
+   local servers sharing the same tokens, then turn off dry-run (`SERVER_FLAGS=`); the official Connect button (links straight to
    Strava's authorize URL, as the brand guidelines require) and Powered by Strava logo are in `site/strava/`; the
    landing page shows "coming soon" until the app is reachable; then link its buttons to my.gritmeter.app.
 5. Ride map page per activity (a Leaflet prototype lives on the `feat/ride-map` branch).
