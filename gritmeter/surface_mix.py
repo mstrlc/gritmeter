@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 from collections import Counter, defaultdict
 from pathlib import Path
 
-ROOT = Path(__file__).parent
+ROOT = Path(__file__).parent.parent   # the repo (or /app in the image): data/, site/, .env
 GPX_DIR = ROOT / "data" / "gpx"
 OSM_DIR = ROOT / "data" / "osm"
 OUT_JSON = ROOT / "data" / "results.json"

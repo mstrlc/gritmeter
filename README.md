@@ -71,11 +71,11 @@ load-bearing: the app runs in Docker on a Raspberry Pi 4 and has to stay small.
 Heavy `.pbf` processing happens on the Mac.
 
 ```sh
-.venv/bin/python extract_osm.py data/pbf/*.osm.pbf   # build the OSM tile cache
-python3 ride_rating.py                               # grade every ride in data/rides.json
-python3 strava.py rate <activity_id>                 # rate one Strava ride (--write updates it)
-python3 server.py --dry-run                          # my.gritmeter.app on 127.0.0.1:8722
-python3 -m http.server -d site                       # the landing page
+.venv/bin/python gritmeter/extract_osm.py data/pbf/*.osm.pbf   # build the OSM tile cache
+python3 gritmeter/ride_rating.py                               # grade every ride in data/rides.json
+python3 gritmeter/strava.py rate <activity_id>                 # rate one Strava ride (--write updates it)
+python3 gritmeter/server.py --dry-run                          # my.gritmeter.app on 127.0.0.1:8722
+python3 -m http.server -d site                                 # the landing page
 ```
 
 Strava keys go in `.env` (`STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`,
@@ -83,24 +83,24 @@ Strava keys go in `.env` (`STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`,
 
 | Path | What |
 | --- | --- |
-| `surface_mix.py` | OSM tile fetch and cache, snapping the track to OSM ways |
-| `ride_rating.py` | the six grades, the roughness score and the description block |
-| `strava.py` | Strava OAuth, GPS streams, the description writer, webhook subscription |
-| `store.py` | SQLite store: athletes and the job queue |
-| `server.py` | my.gritmeter.app: routes, sessions, webhook, worker, map and heartbeat threads |
-| `web.py` | server-rendered HTML for my.gritmeter.app |
-| `extract_osm.py` | fills `data/osm/` from Geofabrik extracts (needs pyosmium) |
+| `gritmeter/surface_mix.py` | OSM tile fetch and cache, snapping the track to OSM ways |
+| `gritmeter/ride_rating.py` | the six grades, the roughness score and the description block |
+| `gritmeter/strava.py` | Strava OAuth, GPS streams, the description writer, webhook subscription |
+| `gritmeter/store.py` | SQLite store: athletes and the job queue |
+| `gritmeter/server.py` | my.gritmeter.app: routes, sessions, webhook, worker, map and heartbeat threads |
+| `gritmeter/web.py` | server-rendered HTML for my.gritmeter.app |
+| `gritmeter/extract_osm.py` | fills `data/osm/` from Geofabrik extracts (needs pyosmium) |
 | `site/` | the landing page for gritmeter.app, plain HTML and CSS; `site/strava/` holds Strava's official assets, unmodified |
 | `wrangler.jsonc`, `src/worker.js` | Cloudflare Workers: serves `site/`, redirects www to the apex |
-| `Dockerfile`, `compose.yaml` | the app plus `cloudflared`, no published ports; `data/` and `.env` mounted from the Pi |
-| `cloudflared.yml` | the tunnel's ingress, my.gritmeter.app to the app container |
-| `firewall.sh` | keeps the containers off the Pi, the LAN and the tailnet: internet only |
-| `deploy.sh` | copies the code to the Pi and rebuilds there (`--osm` also copies the tile cache) |
+| `host/Dockerfile`, `host/compose.yaml` | the app plus `cloudflared`, no published ports; `data/` and `.env` mounted from the Pi |
+| `host/cloudflared.yml` | the tunnel's ingress, my.gritmeter.app to the app container |
+| `host/firewall.sh` | keeps the containers off the Pi, the LAN and the tailnet: internet only |
+| `host/deploy.sh` | copies the code to the Pi and rebuilds there (`--osm` also copies the tile cache) |
 | `design/identity.html` | the visual identity: tokens, type, logo, surface colours |
 
 Two deploys, both by hand; pushing to `main` deploys nothing. The landing page
 goes to Cloudflare Workers with `npx wrangler deploy`, the app to the Pi with
-`./deploy.sh`. The app starts in dry-run (rates rides, writes no descriptions)
+`host/deploy.sh`. The app starts in dry-run (rates rides, writes no descriptions)
 until the Pi's `.env` sets `SERVER_FLAGS=` (empty).
 
 ## Before you change anything

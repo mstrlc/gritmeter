@@ -8,7 +8,7 @@
 services:
   gritmeter:
     build: .
-    command: python server.py ${SERVER_FLAGS---dry-run}
+    command: python gritmeter/server.py ${SERVER_FLAGS---dry-run}
     env_file: .env
     user: "1000:1000"   # matyas on the Pi, who owns data/ and rsyncs tiles into it
     volumes:

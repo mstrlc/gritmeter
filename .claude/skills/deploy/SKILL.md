@@ -10,9 +10,9 @@ Two targets, each deployed on its own. Argument: `web`, `pi`, `pi --osm`, or not
 | Target | Serves | Command | Needed for changes to |
 |---|---|---|---|
 | web | gritmeter.app, Cloudflare Workers | `npx wrangler deploy` | `site/**`, `src/worker.js`, `wrangler.jsonc` |
-| pi | my.gritmeter.app, Docker on `pi4.local` via Cloudflare Tunnel | `./deploy.sh` | `*.py`, `Dockerfile`, `compose.yaml`, `cloudflared.yml`, `firewall.sh`, `site/strava/` |
+| pi | my.gritmeter.app, Docker on `pi4.local` via Cloudflare Tunnel | `host/deploy.sh` | `gritmeter/**`, `host/**`, `site/strava/` |
 
-`site/strava/` goes to both (the app serves the Strava logos too). New OSM tiles in `data/osm/` need `./deploy.sh --osm`.
+`site/strava/` goes to both (the app serves the Strava logos too). New OSM tiles in `data/osm/` need `host/deploy.sh --osm`.
 
 ## 1. Pick the target
 With no argument, compare against what is live. There is no deploy marker, so use the commits since the last deploy
@@ -38,15 +38,16 @@ curl -s -o /dev/null -w '%{http_code}\n' https://www.gritmeter.app/   # 301 to t
 The app restarts. If the Pi's `.env` has `SERVER_FLAGS=` (empty), it is live and starts writing real Strava
 descriptions as soon as it is up, so say which mode it is in when reporting. Never edit `SERVER_FLAGS` as part of a deploy.
 ```bash
-./deploy.sh            # or ./deploy.sh --osm after rebuilding tiles on the Mac
+host/deploy.sh         # or host/deploy.sh --osm after rebuilding tiles on the Mac
 ```
-It rsyncs the code (never `.env` or `data/`), then `docker compose up -d --build` and prints `docker compose ps`, run
+It rsyncs `host/`'s files to the top of `/opt/gritmeter` with `gritmeter/` and `site/` beside them (never `.env` or
+`data/`), then `docker compose up -d --build` and prints `docker compose ps`, run
 in the background if the build is slow (first build on the Pi takes a few minutes). Then check:
 ```bash
 ssh pi4.local 'cd /opt/gritmeter && docker compose ps && docker compose logs --tail 20 gritmeter'
 curl -s https://my.gritmeter.app/health      # "ok"
 ```
-Both containers (`gritmeter`, `cloudflared`) must be up. If `firewall.sh` changed, the rules only apply after
+Both containers (`gritmeter`, `cloudflared`) must be up. If `host/firewall.sh` changed, the rules only apply after
 `ssh -t pi4.local sudo /opt/gritmeter/firewall.sh`, which needs the user's password: give them the command to run.
 
 ## 4. Report

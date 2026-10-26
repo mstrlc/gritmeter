@@ -1,10 +1,5 @@
 # the image gets code only: data and secrets are mounted or passed in at run time
 .env
 data/
-maps/
-.venv/
-.git/
-.claude/
-.wrangler/
 __pycache__/
 .DS_Store
