@@ -8,7 +8,8 @@ description: Deploy gritmeter. "web" publishes the landing page (site/) to Cloud
 Normally nothing is deployed by hand: merging a release PR into `main` runs `.github/workflows/release.yml`, which
 deploys both targets and tags the release. To "ship" features, open (or merge, if asked) the `develop` -> `main` PR
 with a `VERSION` bump. Use this skill for new OSM tiles (`pi --osm`), when the workflow is broken, or when the user
-explicitly asks for a manual deploy; never deploy anything that is not on `origin/main`.
+explicitly asks for a manual deploy; never deploy anything that is not on `origin/main`. `CONTRIBUTING.md` has the
+release process, and re-running a failed release (`gh run rerun <id> --failed`) usually beats a manual deploy.
 
 Two targets, each deployed on its own. Argument: `web`, `pi`, `pi --osm`, or nothing (pick from what changed).
 
