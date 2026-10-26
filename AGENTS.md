@@ -22,6 +22,7 @@ GPS points -> resample every 20 m -> fetch nearby OSM ways (cached tiles) -> sna
 | `gritmeter/extract_osm.py` | Fills `data/osm/` tiles from Geofabrik `.osm.pbf` extracts (needs pyosmium, in `.venv`). |
 | `.github/workflows/` | `ci.yml` checks PRs; `release.yml` deploys and tags every push to `main` (see Branches and releases). |
 | `VERSION` | The next/current release, x.y.z; bumped in each release PR. |
+| `CONTRIBUTING.md` | Branches, releases, hotfixes, deploy secrets and how CI reaches the Pi. |
 | `host/` | Hosting for my.gritmeter.app on the Pi: `Dockerfile`, `compose.yaml`, `cloudflared.yml`, `firewall.sh` + `gritmeter-firewall.service`, `deploy.sh`. |
 
 Data in `data/`: `rides.json` (id/date/name), `strava_polylines.json`, `osm/` tile cache (`<ty>_<tx>.json`),
@@ -45,6 +46,7 @@ No test suite yet. Validate classifier/snapping changes by re-running `gritmeter
 
 ## Branches and releases
 `main` is what is running: every push to it deploys both targets and tags the commit as a GitHub release.
+`CONTRIBUTING.md` has the full process (release steps, hotfixes, failed runs, how CI reaches the Pi); in short:
 - Work goes on `feat/<thing>` (or `fix/`, `chore/`) branched from `develop`, with PRs into `develop`.
 - A release is a PR from `develop` into `main` that bumps `VERSION` (x.y.z); merge it with a merge commit, not a
   squash, so `develop` stays an ancestor of `main`. `ci.yml` checks the source branch and that the version is new.

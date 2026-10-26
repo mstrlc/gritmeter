@@ -107,6 +107,8 @@ The app starts in dry-run (rates rides, writes no descriptions) until the Pi's
 
 ## Before you change anything
 
+- **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — branches, how a release goes out, hotfixes,
+  and what to do when a deploy fails.
 - **[`AGENTS.md`](AGENTS.md)** — the pipeline, every command, and the things that
   are easy to get wrong: streams not polylines, never overwrite a rider's text,
   never cache a partial Overpass answer.
