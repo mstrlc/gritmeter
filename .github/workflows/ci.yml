@@ -1,0 +1,49 @@
+# Checks every PR. Features go to develop; PRs to main are releases (from develop, or hotfix/*) and must bump VERSION.
+name: ci
+
+on:
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: python compiles
+        run: python3 -m py_compile gritmeter/*.py
+      - name: shell scripts parse
+        run: for f in host/*.sh; do sh -n "$f"; done
+      - name: compose file is valid
+        run: touch host/.env && docker compose -f host/compose.yaml config --quiet
+
+  release:
+    if: github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: comes from develop or hotfix/*
+        env:
+          HEAD: ${{ github.head_ref }}
+        run: |
+          case "$HEAD" in
+            develop|hotfix/*) ;;
+            *) echo "::error::PRs to main come from develop (or hotfix/*), not $HEAD"; exit 1 ;;
+          esac
+      - name: VERSION is a new release
+        run: |
+          v=$(cat VERSION)
+          echo "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error::VERSION '$v' is not x.y.z"; exit 1; }
+          if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then
+            echo "::error::v$v is already released; bump VERSION in this PR"; exit 1
+          fi
+          latest=$(git tag -l 'v*' --sort=-v:refname | head -1)
+          if [ -n "$latest" ] && [ "$(printf '%s\n%s\n' "${latest#v}" "$v" | sort -V | tail -1)" != "$v" ]; then
+            echo "::error::VERSION $v is older than $latest"; exit 1
+          fi
+          echo "releases v$v (previous: ${latest:-none})"

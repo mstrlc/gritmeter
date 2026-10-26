@@ -1,0 +1,94 @@
+# Every push to main (a merged release PR) deploys both targets, then tags the commit vVERSION as a GitHub release,
+# so the latest release is always what is running. The Pi is reached over Tailscale (workload identity, no stored
+# Tailscale secret) and gets host/deploy.sh exactly as a manual deploy would; OSM tiles (--osm) stay a manual step.
+name: release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: v
+        run: |
+          v=$(cat VERSION)
+          if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then
+            echo "::error::v$v is already released; bump VERSION"; exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+  web:
+    needs: version
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+      - name: gritmeter.app answers
+        run: curl -fsS -o /dev/null -w '%{http_code}\n' https://gritmeter.app/
+
+  pi:
+    needs: version
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write   # Tailscale workload identity federation
+    env:
+      PI_HOST: ${{ vars.PI_HOST }}   # the Pi's tailnet address
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: tailscale/github-action@d1b6cd204f8dceda5b3eaad7f1f767be390056cd # v4.2.0
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+          ping: ${{ vars.PI_HOST }}
+      - name: ssh to the Pi as pi4.local
+        env:
+          PI_SSH_KEY: ${{ secrets.PI_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$PI_SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          cp .github/pi_known_hosts ~/.ssh/known_hosts
+          printf 'Host pi4.local\n  HostName %s\n  User matyas\n  HostKeyAlias pi4.local\n  StrictHostKeyChecking yes\n' \
+            "$PI_HOST" > ~/.ssh/config
+      - name: deploy
+        run: host/deploy.sh
+      - name: my.gritmeter.app is healthy
+        run: |
+          for i in $(seq 24); do
+            [ "$(curl -fsS https://my.gritmeter.app/health 2>/dev/null)" = ok ] && { echo ok; exit 0; }
+            sleep 5
+          done
+          echo "::error::/health did not say ok within 2 minutes"; exit 1
+
+  release:
+    needs: [version, web, pi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V: v${{ needs.version.outputs.version }}
+        run: gh release create "$V" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$V" --generate-notes

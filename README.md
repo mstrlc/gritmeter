@@ -98,10 +98,12 @@ Strava keys go in `.env` (`STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`,
 | `host/deploy.sh` | copies the code to the Pi and rebuilds there (`--osm` also copies the tile cache) |
 | `design/identity.html` | the visual identity: tokens, type, logo, surface colours |
 
-Two deploys, both by hand; pushing to `main` deploys nothing. The landing page
-goes to Cloudflare Workers with `npx wrangler deploy`, the app to the Pi with
-`host/deploy.sh`. The app starts in dry-run (rates rides, writes no descriptions)
-until the Pi's `.env` sets `SERVER_FLAGS=` (empty).
+`main` is what is running. Features go to `feat/*` branches and PRs into
+`develop`; a release is a PR from `develop` into `main` that bumps `VERSION`.
+Merging it deploys the landing page to Cloudflare Workers and the app to the Pi
+(GitHub Actions, over Tailscale), then tags the commit as a GitHub release.
+The app starts in dry-run (rates rides, writes no descriptions) until the Pi's
+`.env` sets `SERVER_FLAGS=` (empty).
 
 ## Before you change anything
 
