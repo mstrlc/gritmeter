@@ -26,9 +26,10 @@ roughness 16 / 100, mixed
 Your own text stays as you wrote it. gritmeter only adds its block below, and
 replaces just that block if a ride is analysed again.
 
-**Status:** not live yet. [gritmeter.app](https://gritmeter.app) shows the landing
-page; riders will connect Strava and manage their rides at
-[my.gritmeter.app](https://my.gritmeter.app) once it is deployed.
+**Status:** live, in early testing. [gritmeter.app](https://gritmeter.app) is the landing
+page; riders connect Strava and manage their rides at
+[my.gritmeter.app](https://my.gritmeter.app), which rates new rides and writes the result
+into their descriptions. Strava caps the app at 10 athletes for now.
 
 ## How it works
 
