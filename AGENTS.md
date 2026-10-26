@@ -20,6 +20,8 @@ GPS points -> resample every 20 m -> fetch nearby OSM ways (cached tiles) -> sna
 | `wrangler.jsonc`, `src/worker.js` | Cloudflare Workers config for gritmeter.app: serves `site/`, redirects www to the apex. |
 | `design/identity.html` | Visual identity sheet ("gritmeter"): tokens, type, logo, surface colours, components. Published as a claude.ai artifact. |
 | `gritmeter/extract_osm.py` | Fills `data/osm/` tiles from Geofabrik `.osm.pbf` extracts (needs pyosmium, in `.venv`). |
+| `.github/workflows/` | `ci.yml` checks PRs; `release.yml` deploys and tags every push to `main` (see Branches and releases). |
+| `VERSION` | The next/current release, x.y.z; bumped in each release PR. |
 | `host/` | Hosting for my.gritmeter.app on the Pi: `Dockerfile`, `compose.yaml`, `cloudflared.yml`, `firewall.sh` + `gritmeter-firewall.service`, `deploy.sh`. |
 
 Data in `data/`: `rides.json` (id/date/name), `strava_polylines.json`, `osm/` tile cache (`<ty>_<tx>.json`),
@@ -41,16 +43,28 @@ npx wrangler deploy               # publish site/ (landing page) to Cloudflare W
 No test suite yet. Validate classifier/snapping changes by re-running `gritmeter/ride_rating.py` and comparing against
 `data/ratings.txt`.
 
+## Branches and releases
+`main` is what is running: every push to it deploys both targets and tags the commit as a GitHub release.
+- Work goes on `feat/<thing>` (or `fix/`, `chore/`) branched from `develop`, with PRs into `develop`.
+- A release is a PR from `develop` into `main` that bumps `VERSION` (x.y.z); merge it with a merge commit, not a
+  squash, so `develop` stays an ancestor of `main`. `ci.yml` checks the source branch and that the version is new.
+- On merge, `release.yml` deploys web and Pi, checks both, then creates release `vVERSION` with generated notes.
+- An urgent fix: `hotfix/<thing>` from `main`, PR into `main` with a patch bump, then merge `main` back into `develop`.
+- Secrets live in the GitHub `production` environment: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
+  `TS_OAUTH_CLIENT_ID`, `TS_AUDIENCE` (Tailscale workload identity, tag `tag:ci`), `PI_SSH_KEY`; variable `PI_HOST`
+  (the Pi's tailnet IP). `.github/pi_known_hosts` pins the Pi's host key.
+
 ## Deploying
-Two targets, deployed separately; the `/deploy` skill (`.claude/skills/deploy/`) has the full steps.
+Two targets, deployed by `release.yml` on every push to `main`. Manual deploys (below, and the `/deploy` skill in
+`.claude/skills/deploy/`) are for OSM tiles and emergencies only, and only from `main`.
 
 | Target | Serves | Deploy | Changed files that need it |
 |---|---|---|---|
 | web | gritmeter.app (Cloudflare Workers) | `npx wrangler deploy` | `site/**`, `src/worker.js`, `wrangler.jsonc` |
 | Pi | my.gritmeter.app (Docker on `pi4.local`, Cloudflare Tunnel) | `host/deploy.sh` (`--osm` for new tiles) | `gritmeter/**`, `host/**`, `site/strava/` |
 
-- Deploy only when asked, from a clean, committed `main`: `host/deploy.sh` rsyncs the working tree as it is, and wrangler
-  uploads `site/` as it is. Push is separate; nothing deploys on push.
+- Deploy by hand only when asked, from a clean `main` that matches `origin/main`: `host/deploy.sh` rsyncs the working
+  tree as it is, and wrangler uploads `site/` as it is. New OSM tiles always need `host/deploy.sh --osm` from the Mac.
 - A Pi deploy restarts the live app: if the Pi is not in `--dry-run`, it rates and writes real descriptions as soon as it
   is back up. Never change `SERVER_FLAGS` in the Pi's `.env` as part of a deploy.
 - After `host/firewall.sh` changes, also run `ssh pi4.local sudo /opt/gritmeter/firewall.sh` (needs the user's sudo).

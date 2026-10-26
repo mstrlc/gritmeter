@@ -5,6 +5,11 @@ description: Deploy gritmeter. "web" publishes the landing page (site/) to Cloud
 
 # Deploy gritmeter
 
+Normally nothing is deployed by hand: merging a release PR into `main` runs `.github/workflows/release.yml`, which
+deploys both targets and tags the release. To "ship" features, open (or merge, if asked) the `develop` -> `main` PR
+with a `VERSION` bump. Use this skill for new OSM tiles (`pi --osm`), when the workflow is broken, or when the user
+explicitly asks for a manual deploy; never deploy anything that is not on `origin/main`.
+
 Two targets, each deployed on its own. Argument: `web`, `pi`, `pi --osm`, or nothing (pick from what changed).
 
 | Target | Serves | Command | Needed for changes to |
@@ -15,14 +20,15 @@ Two targets, each deployed on its own. Argument: `web`, `pi`, `pi --osm`, or not
 `site/strava/` goes to both (the app serves the Strava logos too). New OSM tiles in `data/osm/` need `host/deploy.sh --osm`.
 
 ## 1. Pick the target
-With no argument, compare against what is live. There is no deploy marker, so use the commits since the last deploy
-the user mentions, or `git log --oneline -10 --name-only` and ask if it is unclear. Deploy only the targets whose files
+With no argument, compare against what is live: the latest GitHub release (`gh release view --json tagName`) is what
+`release.yml` last deployed, so `git diff --stat <tag>..main`; ask if it is unclear. Deploy only the targets whose files
 changed; if both did, do both (web first, it is the quicker one to check).
 
 ## 2. Preflight
 - `git status --short` is empty and the branch is `main`. Both tools ship the working tree as it is, so uncommitted
   edits would go live without being in git. If it is dirty, stop and ask (commit first, or deploy anyway).
-- Pushing is separate: nothing deploys on push, and deploying does not push. Mention it if `main` is ahead of `origin`.
+- `main` matches `origin/main` (`git fetch && git status -sb`). A local commit not on `origin` would go live outside
+  the release flow; stop and ask.
 
 ## 3a. web
 ```bash
