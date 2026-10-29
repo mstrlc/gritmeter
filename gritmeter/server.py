@@ -21,8 +21,10 @@ Usage:
   python3 server.py              # listen on HOST:PORT (default 127.0.0.1:8722); PUBLIC_URL is this site's address
   python3 server.py --dry-run    # rate rides but never write descriptions (status "dryrun")
 """
+import collections
 import hashlib
 import hmac
+import itertools
 import json
 import os
 import queue
@@ -48,6 +50,7 @@ BACKFILL_DAYS = 14         # "rate my last 14 days" on the rides page
 MAX_ATTEMPTS = 6           # then the job is marked failed
 NEW_DELAY = 180            # wait after an upload so other description apps (weather, Wandrer...) write first
 VERIFY_AFTER = 900         # one check this long after writing; restores our block if another app replaced it
+WARM_TILES = 80            # on connect, fetch at most this many uncached tiles around the rider's recent rides
 IDLE_POLL = 60             # worker re-checks the queue at least this often
 STATE_TTL = 600            # seconds an OAuth state stays valid
 SESSION_DAYS = 30
@@ -62,7 +65,9 @@ STRAVA_ASSETS = {p.name for p in STRAVA_ASSETS_DIR.glob("*.svg")}
 
 wake = threading.Event()   # set when work is queued so the worker starts at once
 oauth_states = {}          # state -> created time (single process, so memory is enough)
-maps = queue.Queue()       # (job, tiles) for rides in areas with no cached map data yet
+maps = queue.PriorityQueue()  # (priority, seq, job, tiles): rides in new areas (0) before warm-up tiles (1, job None)
+map_seq = itertools.count()   # keeps the queue FIFO within a priority and never compares jobs
+warmups = queue.Queue()       # athlete ids just connected; the worker lists their rides (Strava calls stay in it)
 
 
 def log(msg):
@@ -223,6 +228,8 @@ class Handler(BaseHTTPRequestHandler):
             log(f"connect failed: {e}")
             return self.redirect("/?n=failed")
         log(f"signed in athlete {athlete['id']}, scopes {q.get('scope', '')}")
+        warmups.put(athlete["id"])
+        wake.set()
         n = "connected" if "activity:write" in q.get("scope", "") else "noscope"
         self.redirect(f"/?n={n}", [self.set_cookie(make_session(athlete["id"]), SESSION_DAYS * 86400)])
 
@@ -368,7 +375,7 @@ def run_job(job, write):
         return failed(job, e)
     if p["status"] == "mapping":
         store.wait_for_map(act, p["name"], p["start_date"], p["sport_type"])
-        maps.put((job, p["tiles"]))
+        maps.put((0, next(map_seq), job, p["tiles"]))
         return log(f"{act}: new area, fetching {len(p['tiles'])} map tiles")
     verify_at = time.time() + VERIFY_AFTER if p["detail"] == "written" else None
     store.finish(act, p["status"], p["detail"], p["result"], p["name"], p["start_date"], verify_at, p["sport_type"])
@@ -388,9 +395,16 @@ def failed(job, e):
 
 def map_fetcher():
     """Fetch map tiles for rides in new areas, one tile at a time (Overpass), so the worker keeps rating rides
-    elsewhere. Every tile is tried before giving up, so each retry of the ride only has the failed ones left."""
+    elsewhere. Every tile is tried before giving up, so each retry of the ride only has the failed ones left.
+    Warm-up tiles come one per entry, after any ride, and a failed one is just left for a ride to fetch later."""
     while True:
-        job, tiles = maps.get()
+        _, _, job, tiles = maps.get()
+        if job is None:
+            try:
+                store.sm.fetch_tile(*tiles[0])
+            except Exception as e:
+                log(f"warm-up tile {tiles[0]} failed: {e}")
+            continue
         try:
             bad = []
             for t in tiles:
@@ -406,6 +420,19 @@ def map_fetcher():
                 wake.set()
         except Exception:
             traceback.print_exc()
+
+
+def warm_up(aid):
+    """Queue the uncached map tiles a newly connected rider's recent rides cross, most-ridden first, so their next
+    ride near home is rated without the "new area" wait. One Strava call; reconnecting finds little left to fetch."""
+    counts = collections.Counter()
+    for track in strava.recent_tracks(strava.access_token(aid)):
+        counts.update(store.sm.missing_tiles(track))
+    tiles = [t for t, _ in counts.most_common(WARM_TILES)]
+    for t in tiles:
+        maps.put((1, next(map_seq), None, [t]))
+    if tiles:
+        log(f"athlete {aid}: warming {len(tiles)} of {len(counts)} uncached map tiles around their rides")
 
 
 def run_verify(job):
@@ -433,6 +460,16 @@ def worker(write):
                 strava.usage.clear()
             if (since := catch_up_due()) is not None:
                 catch_up(since)
+            if not warmups.empty():
+                aid = warmups.get()
+                try:
+                    warm_up(aid)
+                except strava.RateLimited:
+                    warmups.put(aid)
+                    raise
+                except Exception as e:
+                    log(f"warm-up failed for athlete {aid}: {e}")
+                continue
             job = store.next_job()
             check = store.next_verify() if write and not job else None
             if job:

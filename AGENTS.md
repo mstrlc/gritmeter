@@ -14,7 +14,7 @@ GPS points -> resample every 20 m -> fetch nearby OSM ways (cached tiles) -> sna
 | `gritmeter/ride_rating.py` | 6-level classifier (`classify_fine`), 0–100 roughness `score`, text `label`. Levels: asphalt, paved_rough, hardpack, gravel, dirt, rough (+ unknown). `rate(points)` is the one-call entry point; `description_block` / `merge_description` build and splice the Strava description block. |
 | `gritmeter/strava.py` | Strava client: OAuth, token refresh, streams fetch, `process(activity)` (rate + description writer), rate-limit tracking, webhook subscription commands. |
 | `gritmeter/store.py` | SQLite (WAL) store, `data/gritmeter.db`: `athletes` (tokens) and `jobs` (queue, dedupe on activity id, results). Keep storage access behind its functions. |
-| `gritmeter/server.py` | Backend for my.gritmeter.app: routes, signed-cookie sessions + CSRF, webhook (`/webhook`), worker thread draining the queue, `maps` thread for new areas, `heartbeat` thread; catch-up pass only after an outage. |
+| `gritmeter/server.py` | Backend for my.gritmeter.app: routes, signed-cookie sessions + CSRF, webhook (`/webhook`), worker thread draining the queue, `maps` thread for new areas (and warm-up tiles around a newly connected rider's recent rides), `heartbeat` thread; catch-up pass only after an outage. |
 | `gritmeter/web.py` | Server-rendered HTML (stdlib) for my.gritmeter.app: sign-in, rides list, settings. Styles copy `design/identity.html` tokens. |
 | `site/index.html` | Landing page (plain HTML/CSS, no build step) + `site/favicon.svg`. |
 | `wrangler.jsonc`, `src/worker.js` | Cloudflare Workers config for gritmeter.app: serves `site/`, redirects www to the apex. |

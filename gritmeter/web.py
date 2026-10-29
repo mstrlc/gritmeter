@@ -100,7 +100,8 @@ h1 { font-weight: 900; letter-spacing: -.05em; line-height: .95; font-size: clam
 h2 { font-weight: 900; letter-spacing: -.04em; line-height: 1.05; font-size: 1.5rem; }
 .lede { margin-top: 16px; max-width: 34em; font-size: 1.125rem; }
 .notice { margin-top: 24px; padding: 14px 18px; border-radius: var(--r); background: var(--card); box-shadow: var(--shadow);
-  border-left: 3px solid var(--ink-2); }
+  display: flex; gap: 10px; }
+.notice .ico { width: 18px; height: 18px; margin-top: .2em; color: var(--ink-2); }
 .gm { font-weight: 900; letter-spacing: -.04em; white-space: nowrap; }
 .gm svg { width: .78em; height: .78em; fill: currentColor; vertical-align: -.04em; margin-right: .25em; }
 .card { background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow); }
@@ -204,6 +205,7 @@ ICONS = {
     "list": '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
     "sliders": '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
     "key": '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3"/>',
+    "info": '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
 }
 
 
@@ -214,7 +216,8 @@ def icon(name):
 
 # flash messages, picked by a fixed code in the redirect URL (never echo free text from the query string)
 NOTICES = {
-    "connected": "connected. new rides you upload to Strava get a surface summary.",
+    "connected": "connected. new rides you upload to Strava get a surface summary. the first ride in an area gritmeter "
+                 "hasn't mapped yet can take up to half an hour; it's already fetching the places you ride most.",
     "noscope": "connected, but without permission to edit your activities, so gritmeter can rate rides but not add "
                "the summary. sign in again and keep that box ticked.",
     "saved": "settings saved.",
@@ -265,7 +268,7 @@ def shell(title, body, athlete=None, csrf="", current=""):
 
 
 def notice(code):
-    return f'<p class="notice" role="status">{escape(NOTICES[code])}</p>' if code in NOTICES else ""
+    return f'<p class="notice" role="status">{icon("info")}<span>{escape(NOTICES[code])}</span></p>' if code in NOTICES else ""
 
 
 def login_page(authorize_url, code=""):
@@ -325,7 +328,7 @@ def _state_live(job, csrf):
         what = {"write": "adding the summary", "remove": "removing the summary"}.get(job["action"], "in the queue")
         return f"{dot}{what}…", ""
     if s == "mapping":
-        return f"{dot}new area: fetching map data, this can take a few minutes…", ""
+        return f"{dot}new area: fetching map data, this can take up to half an hour…", ""
     if s == "done":
         return (f'{icon("check")}in the description',
                 _action(aid, "remove", "minus", "remove", csrf))

@@ -85,6 +85,8 @@ and most tiles would never be read.
 
 A ride touching uncached tiles waits in status `mapping` ("new area" on the rides page) while a separate thread
 fetches them from Overpass one by one, then it is rated; other rides keep going meanwhile.
+To spare a new rider that wait, connecting queues up to 80 uncached tiles their last 30 rides cross (from the list's
+summary polylines, one Strava call), most-ridden first; rides in new areas always go ahead of these warm-up tiles.
 
 ## Build order
 1. Package the pipeline as `analyse(points) -> {pct, score, label}`; remove CZ-specific assumptions; make the tile source pluggable.
