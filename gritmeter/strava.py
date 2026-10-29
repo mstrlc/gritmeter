@@ -181,6 +181,15 @@ def recent_activity_ids(token, after):
     return [a["id"] for a in request("GET", f"{API}/athlete/activities?after={after}&per_page=50", token)]
 
 
+def recent_tracks(token, n=30):
+    """Coarse [(lat, lon)] tracks of the athlete's latest n outdoor rides, from the list's summary polylines (one call).
+    Only good enough to tell which map tiles they cross: never rate from these."""
+    acts = request("GET", f"{API}/athlete/activities?per_page={n}", token)
+    return [rr.sm.densify(rr.sm.decode_polyline(a["map"]["summary_polyline"]), 50) for a in acts
+            if a.get("sport_type") in RIDE_TYPES and not a.get("trainer")
+            and (a.get("map") or {}).get("summary_polyline")]
+
+
 def process(activity_id, token, write=True, auto_write=True, skip_private=False, action=None, write_types=None,
             skip_commute=False, map_wait=False):
     """Rate one activity and put our block in its description, following the rider's settings.
